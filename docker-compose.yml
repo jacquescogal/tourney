@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-local
+    environment:
+      MYSQL_ROOT_PASSWORD: "password"
+      MYSQL_DATABASE: "gt-football"
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - app-network
+
+  fastapi:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    container_name: fastapi-backend
+    depends_on:
+      - mysql
+    ports:
+      - "8000:8000"
+    environment:
+      ENVIRONMENT: local
+      LOCAL_DATABASE_URL: mysql+pymysql://root:password@mysql:3306/gt-football
+    networks:
+      - app-network
+
+volumes:
+  mysql_data:
+
+networks:
+  app-network:
+    driver: bridge

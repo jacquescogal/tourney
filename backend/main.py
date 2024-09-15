@@ -1,8 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import os
+from src.database.database import Database
 
-app = FastAPI()
+database: Database = Database.get_instance()
+
+async def lifespan(_):
+    await database.create_tables()
+    yield
+    await database.engine.dispose()
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -13,4 +20,5 @@ app.add_middleware(
 
 @app.get("/")
 async def health():
+    database = await Database.get_instance()
     return {"status": "ok"}
