@@ -13,11 +13,14 @@ class Database:
 
     def __init__(self, settings: Settings):
         settings = settings.get_instance()
+
+        # connection pool
         self.engine = create_async_engine(
             settings.database_url,
             pool_size=10,
             max_overflow=20,
-            pool_timeout=30
+            pool_timeout=30,
+            echo=False
         )
         self.SessionLocal = sessionmaker(
             bind=self.engine, class_=AsyncSession, expire_on_commit=False
@@ -27,7 +30,7 @@ class Database:
         async with self.engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
-    async def get_db(self):
+    async def get_session(self):
         async with self.SessionLocal() as session:
             try:
                 yield session

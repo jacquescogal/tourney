@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.database.database import Database
+from src.routers import team
 
 database: Database = Database.get_instance()
 
@@ -10,6 +11,7 @@ async def lifespan(_):
     await database.engine.dispose()
 
 app = FastAPI(lifespan=lifespan)
+app.include_router(team.team_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -20,5 +22,4 @@ app.add_middleware(
 
 @app.get("/")
 async def health():
-    database = await Database.get_instance()
     return {"status": "ok"}

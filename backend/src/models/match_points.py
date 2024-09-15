@@ -3,8 +3,10 @@ from sqlalchemy.dialects.mysql import TINYINT, BIGINT
 from sqlalchemy.orm import relationship
 from src.models import Base
 
-# Match Points Table Model
 class MatchPoints(Base):
+    """
+    MatchPoints Table Model using SQLAlchemy ORM
+    """
     __tablename__ = 'match_points_tab'
 
     match_id = Column(BIGINT(unsigned=True), ForeignKey('game_match_tab.match_id', ondelete='CASCADE'), primary_key=True)

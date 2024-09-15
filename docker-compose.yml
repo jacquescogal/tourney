@@ -25,7 +25,7 @@ services:
       - "8000:8000"
     environment:
       ENVIRONMENT: local
-      LOCAL_DATABASE_URL: mysql+pymysql://root:password@mysql:3306/gt-football
+      LOCAL_DATABASE_URL: mysql+asyncmy://root:password@mysql-local:3306/gt-football
     networks:
       - app-network
 
