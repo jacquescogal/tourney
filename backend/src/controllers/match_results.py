@@ -42,9 +42,17 @@ class MatchResultsController:
         if len(existing_teams) != len(team_name_set):
             raise HTTPException(status_code=400, detail="Teams do not exist: "+str(team_name_set - set([team.team_name for team in existing_teams])))
         team_name_to_id_map = {}
+        team_name_to_group_map = {}
         for team in existing_teams:
             team_name_to_id_map[team.team_name] = team.team_id
+            team_name_to_group_map[team.team_name] = team.group_number
 
+        # if the round is 1 or 2 and not 3(final round), don't allow cross group matches
+        if round_number < 3:
+            for match_result in request_match_results:
+                if team_name_to_group_map[match_result.result[0].team_name] != team_name_to_group_map[match_result.result[1].team_name]:
+                    raise HTTPException(status_code=400, detail="Cross group matches are not allowed in round 1 and 2")
+                
         # check if matches already exist
         existing_matches = await self.game_match_repository.get_game_matches_by_ids(match_ids)
         if len(existing_matches) > 0:
