@@ -40,7 +40,7 @@ class RegisterTeamRequest(BaseModel):
         try:
             # strptime() will raise ValueError if the date is invalid
             # the first argument must be a full date, so we append a year
-            datetime.strptime(f"{v}/2024", '%d/%m/%Y')
+            datetime.strptime(f"{v}/1972", '%d/%m/%Y')
         except ValueError:
             raise ValueError('Invalid registration date format')
         return v

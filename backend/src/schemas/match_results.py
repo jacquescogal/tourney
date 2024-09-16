@@ -20,7 +20,8 @@ class CreateMatchResultsRequest(BaseModel):
         return v
 
 class BatchCreateMatchResultsRequest(BaseModel):
-    results: List[CreateMatchResultsRequest] = Field(..., examples=[{"match_id":1,"result":[{"team_name": "Team A", "goals_scored": 2},{"team_name": "Team B", "goals_scored": 2}]}], description="list of match results to be created as a batch")
+    results: List[CreateMatchResultsRequest] = Field(..., example=[{"match_id":1,"result":[{"team_name": "Team A", "goals_scored": 2},{"team_name": "Team B", "goals_scored": 2}]}], description="list of match results to be created as a batch")
+    round_number: int = Field(..., example=1, description="Round number for the matches")
 
     @field_validator("results")
     def validate_results(cls, v):
@@ -28,4 +29,12 @@ class BatchCreateMatchResultsRequest(BaseModel):
         # results need to have at least one result in array
         if len(v) == 0:
             raise ValueError("Results array cannot be empty")
+        return v
+    
+    @field_validator("round_number")
+    def validate_round_number(cls, v):
+        # validates:
+        # round number should be between 1 and 3(final round) inclusive
+        if v < 1 or v > 3:
+            raise ValueError("Round number should be between 1 and 3")
         return v

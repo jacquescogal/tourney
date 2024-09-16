@@ -6,7 +6,7 @@ from src.models import Base
 from src.models.user import User
 from src.models.team import Team
 from src.models.game_match import GameMatch
-from models.match_results import MatchResults
+from src.models.match_results import MatchResults
 
 class Database:
     instance = None

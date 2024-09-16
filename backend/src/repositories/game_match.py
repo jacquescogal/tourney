@@ -1,40 +1,27 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from src.models.team import Team
+from src.models.game_match import GameMatch
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from fastapi import HTTPException
 from typing import List
 
-class TeamRepository:
+class GameMatchRepository:
     def __init__(self, db: AsyncSession):
         # inject db
         self.db = db
 
-    async def create_teams(self, teams: List[Team]) -> bool:
+    async def create_game_matches(self, game_matches: List[GameMatch]) -> bool:
         """
-        Creates new team as batch.
-        Is transactional, if one team already exists, rollbacks whole transaction.
-
-        Args:
-        team_name: str
-        registration_date_unix: int
-        group_number: int
-
-        Returns:
-        is_successful: bool
-
-        Raises:
-        IntegrityError: If one of the team names already exists
-        SQLAlchemyError: If any other error
+        Creates new game matches as batch.
         """
         try:
-            for team in teams:
-                self.db.add(team)
+            for game_match in game_matches:
+                self.db.add(game_match)
             try:
                 await self.db.flush()
             except IntegrityError as e:
                 await self.rollback_transaction()
-                raise HTTPException(status_code=400, detail=f"Team already exists: {e.params[0]}")
+                raise HTTPException(status_code=400, detail=f"Game Match already exists: {e.params[0]}")
         except SQLAlchemyError as e:
             await self.rollback_transaction()
             raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
@@ -42,24 +29,15 @@ class TeamRepository:
             await self.rollback_transaction()
             raise HTTPException(status_code=e.status_code, detail=e.detail)
         return True
-    
-    async def get_teams_by_team_names(self, team_names: List[str]) -> List[Team]:
+
+    async def get_game_matches_by_ids(self, match_ids: List[int]) -> GameMatch:
         """
-        Checks the existence of teams by their names.
-
-        Args:
-        team_names: List[str]: A list of team names to check.
-
-        Returns:
-        existing_teams: List[str]: A list of team names that already exist in the database.
-
-        Raises:
-        SQLAlchemyError: If any error occurs during the database query.
+        Gets game matches by their ids.
         """
         try:
-            query = select(Team.team_id,Team.team_name, Team.registration_date_unix, Team.group_number).where(Team.team_name.in_(team_names))
+            query = select(GameMatch.match_id).where(GameMatch.match_id.in_(match_ids))
             result = await self.db.execute(query)
-            existing_teams = [Team(team_id=row[0], team_name=row[1], registration_date_unix=row[2], group_number=row[3]) for row in result.fetchall()]
+            existing_teams = [row[0] for row in result.fetchall()]
 
             return existing_teams
         except SQLAlchemyError as e:
