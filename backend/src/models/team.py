@@ -15,6 +15,6 @@ class Team(Base):
     group_number = Column(TINYINT(unsigned=True), nullable=False)
 
     users = relationship('User', back_populates='team')
-    match_points = relationship('MatchPoints', back_populates='team')
+    match_results = relationship('MatchResults', back_populates='team')
 
     __table_args__ = {'mysql_engine': 'InnoDB'}

@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.models.match_points import MatchPoints
+from models.match_results import MatchResults
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from fastapi import HTTPException
 from typing import List
@@ -9,5 +9,5 @@ class MatchResultsRepository:
         # inject db
         self.db = db
 
-    async def create_match_results(self, match_results: List[MatchPoints]) -> bool:
+    async def create_match_results(self, match_results: List[MatchResults]) -> bool:
         pass

@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS game_match_tab (
 CREATE INDEX idx_round_number
 ON game_match_tab(round_number);
 
-CREATE TABLE IF NOT EXISTS match_points_tab (
+CREATE TABLE IF NOT EXISTS match_results_tab (
     match_id BIGINT UNSIGNED,
     team_id TINYINT UNSIGNED,
     PRIMARY KEY (match_id, team_id),
