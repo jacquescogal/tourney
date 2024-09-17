@@ -4,7 +4,7 @@ from datetime import datetime
 class TeamBase(BaseModel):
     team_id: int = Field(..., example=1, description='Team ID')
     team_name: str = Field(..., example='Team 1', description='Team Name')
-    registration_date_unix: int = Field(..., example=1630483200, description='Registration Date in Unix Timestamp')
+    registration_day_of_year: int = Field(..., example=1630483200, description='Registration Date in Unix Timestamp')
     group_number: int = Field(..., example=1, description='Group Number')
 
 class RegisterTeamRequest(BaseModel):

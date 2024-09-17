@@ -17,7 +17,7 @@ class TeamRepository:
 
         Args:
         team_name: str
-        registration_date_unix: int
+        registration_day_of_year: int
         group_number: int
 
         Returns:
@@ -57,9 +57,9 @@ class TeamRepository:
         SQLAlchemyError: If any error occurs during the database query.
         """
         try:
-            query = select(Team.team_id,Team.team_name, Team.registration_date_unix, Team.group_number).where(Team.team_name.in_(team_names))
+            query = select(Team.team_id,Team.team_name, Team.registration_day_of_year, Team.group_number).where(Team.team_name.in_(team_names))
             result = await self.db.execute(query)
-            existing_teams = [Team(team_id=row[0], team_name=row[1], registration_date_unix=row[2], group_number=row[3]) for row in result.fetchall()]
+            existing_teams = [Team(team_id=row[0], team_name=row[1], registration_day_of_year=row[2], group_number=row[3]) for row in result.fetchall()]
 
             return existing_teams
         except SQLAlchemyError as e:
@@ -79,11 +79,11 @@ class TeamRepository:
         SQLAlchemyError: If any error occurs during the database query.
         """
         try:
-            query = select(Team.team_id,Team.team_name, Team.registration_date_unix, Team.group_number)
+            query = select(Team.team_id,Team.team_name, Team.registration_day_of_year, Team.group_number)
             if group_filter_filter != None:
                 query = query.where(Team.group_number == group_filter_filter)
             result = await self.db.execute(query)
-            return [Team(team_id=row[0], team_name=row[1], registration_date_unix=row[2], group_number=row[3]) for row in result.fetchall()]
+            return [Team(team_id=row[0], team_name=row[1], registration_day_of_year=row[2], group_number=row[3]) for row in result.fetchall()]
         except SQLAlchemyError as e:
             raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
         

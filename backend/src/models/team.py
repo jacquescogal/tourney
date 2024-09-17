@@ -11,7 +11,7 @@ class Team(Base):
 
     team_id = Column(TINYINT(unsigned=True), primary_key=True, autoincrement=True)
     team_name = Column(String(50), nullable=False, index=True, unique=True)
-    registration_date_unix = Column(BIGINT(unsigned=True), nullable=False)
+    registration_day_of_year = Column(BIGINT(unsigned=True), nullable=False)
     group_number = Column(TINYINT(unsigned=True), nullable=False)
 
     users = relationship('User', back_populates='team')

@@ -3,7 +3,7 @@ from src.schemas.team import RegisterTeamRequest
 from src.models.team import Team
 from typing import List
 from fastapi import HTTPException
-from src.utils.date_util import ddmm_to_unix
+from src.utils.date_util import ddmm_to_day_of_year
 from src.redis.lock import DistributedLock
 
 class TeamController:
@@ -44,7 +44,7 @@ class TeamController:
             # create teams 
             teams: List[Team] = [Team(
                 team_name=team.team_name,
-                registration_date_unix=ddmm_to_unix(team.registration_date),
+                registration_day_of_year=ddmm_to_day_of_year(team.registration_date),
                 group_number=team.group_number
             ) for team in request_teams]
             if await self.team_repository.create_teams(teams) == True:

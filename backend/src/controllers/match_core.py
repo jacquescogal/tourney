@@ -7,7 +7,7 @@ from typing import List, Set, Dict
 from fastapi import HTTPException
 from src.models.game_match import GameMatch
 from src.schemas.rank import TeamRank, GroupRanking, GetRankingResponse
-from src.utils.date_util import unix_to_ddmm
+from src.utils.date_util import day_of_year_to_ddmm
 import json
 from src.redis.lock import DistributedLock
 class MatchController:
@@ -80,7 +80,6 @@ class MatchController:
                 raise HTTPException(status_code=400, detail="Matches already exist: "+str(existing_matches))
             
             # check if matches between teams already exist for a round
-            # TODO: check
             match_ups: List[MatchResultSparse] = await self.match_repository.get_matchups_by_round_and_team_ids(round_number, list(team_name_to_id_map.values()))
             match_id_opponent_map: Dict[int, int] = {} # match_id -> opponent_team_id, will set on first match_id natched
             for match_up in match_ups:
@@ -121,7 +120,7 @@ class MatchController:
         finally:
             await self.match_result_lock.give()
     
-    async def get_match_rankings(self, round_number: int, group_number_filter: int = None) -> GetRankingResponse:
+    async def get_match_rankings(self, qualifying_count: int, round_number: int, group_number_filter: int = None) -> GetRankingResponse:
         """
         Gets match results for a given round and group number
         """
@@ -148,8 +147,8 @@ class MatchController:
                 team_b_detail = result
                 group_mapper.setdefault(team_a_detail.team_id, team_a_detail.group_number)
                 group_mapper.setdefault(team_b_detail.team_id, team_b_detail.group_number)
-                team_rank_mapper.setdefault(team_a_detail.team_id, TeamRank(team_id=team_a_detail.team_id, position=1, is_tied=False, team_name=team_a_detail.team_name, goals=team_a_detail.goals_scored,wins=0, draws=0, losses=0,join_date_unix=team_a_detail.join_date_unix, join_date_ddmm=unix_to_ddmm(team_a_detail.join_date_unix)))
-                team_rank_mapper.setdefault(team_b_detail.team_id, TeamRank(team_id=team_b_detail.team_id, position=1, is_tied=False, team_name=team_b_detail.team_name, goals=team_b_detail.goals_scored,wins=0, draws=0, losses=0,join_date_unix=team_b_detail.join_date_unix, join_date_ddmm=unix_to_ddmm(team_b_detail.join_date_unix)))
+                team_rank_mapper.setdefault(team_a_detail.team_id, TeamRank(team_id=team_a_detail.team_id, position=1, is_tied=False, team_name=team_a_detail.team_name, goals=team_a_detail.goals_scored,wins=0, draws=0, losses=0,registration_day_of_year=team_a_detail.registration_day_of_year, registration_date_ddmm=day_of_year_to_ddmm(team_a_detail.registration_day_of_year)))
+                team_rank_mapper.setdefault(team_b_detail.team_id, TeamRank(team_id=team_b_detail.team_id, position=1, is_tied=False, team_name=team_b_detail.team_name, goals=team_b_detail.goals_scored,wins=0, draws=0, losses=0,registration_day_of_year=team_b_detail.registration_day_of_year, registration_date_ddmm=day_of_year_to_ddmm(team_b_detail.registration_day_of_year)))
                 if team_a_detail.goals_scored > team_b_detail.goals_scored:
                     team_rank_mapper[team_a_detail.team_id].wins += 1
                     team_rank_mapper[team_b_detail.team_id].losses += 1
@@ -168,18 +167,29 @@ class MatchController:
         all_teams = await self.team_repository.get_teams_by_group(group_number_filter)
         for team in all_teams:
             if team_rank_mapper.get(team.team_id, None) is None:
-                group_dict.setdefault(team.group_number, []).append(TeamRank(team_id=team.team_id, position=1, is_tied=False, team_name=team.team_name, goals=0, wins=0, draws=0, losses=0, join_date_unix=team.registration_date_unix, join_date_ddmm=unix_to_ddmm(team.registration_date_unix)))
+                group_dict.setdefault(team.group_number, []).append(TeamRank(team_id=team.team_id, position=1, is_tied=False, team_name=team.team_name, goals=0, wins=0, draws=0, losses=0, registration_day_of_year=team.registration_day_of_year, registration_date_ddmm=day_of_year_to_ddmm(team.registration_day_of_year)))
         for group_number in group_dict.keys():
-            group_dict[group_number] = sorted(group_dict[group_number], key=lambda x: (self._get_score(x), x.goals, self._get_alternate_score(x), -x.join_date_unix), reverse=True)
-            cur_pos = 1
-            for i in range(1, len(group_dict[group_number])):
-                if self._get_score(group_dict[group_number][i]) == self._get_score(group_dict[group_number][i-1]) and group_dict[group_number][i].goals == group_dict[group_number][i-1].goals and self._get_alternate_score(group_dict[group_number][i]) == self._get_alternate_score(group_dict[group_number][i-1]) and group_dict[group_number][i].join_date_unix == group_dict[group_number][i-1].join_date_unix:
-                    group_dict[group_number][i-1].is_tied = True
+            if len(group_dict[group_number]) == 0:
+                continue
+            group_dict[group_number] = sorted(group_dict[group_number], key=lambda x: (self._get_score(x), x.goals, self._get_alternate_score(x), -x.registration_day_of_year), reverse=True)
+            cur_pos = len(group_dict[group_number])
+            tie_count = 0
+            group_dict[group_number][len(group_dict[group_number])-1].position = cur_pos
+            if cur_pos <= qualifying_count:
+                group_dict[group_number][len(group_dict[group_number])-1].is_qualified = True
+            for i in range(len(group_dict[group_number])-2, -1, -1):
+                if self._get_score(group_dict[group_number][i]) == self._get_score(group_dict[group_number][i+1]) and group_dict[group_number][i].goals == group_dict[group_number][i+1].goals and self._get_alternate_score(group_dict[group_number][i]) == self._get_alternate_score(group_dict[group_number][i+1]) and group_dict[group_number][i].registration_day_of_year == group_dict[group_number][i+1].registration_day_of_year:
+                    group_dict[group_number][i+1].is_tied = True
                     group_dict[group_number][i].is_tied = True
+                    tie_count += 1
                 else:
                     group_dict[group_number][i].is_tied = False
-                    cur_pos += 1
+                    cur_pos -= (1 + tie_count)
+                    tie_count = 0
                 group_dict[group_number][i].position = cur_pos
+                if cur_pos <= qualifying_count:
+                    group_dict[group_number][i].is_qualified = True
+                
         
         # return structured response
         return GetRankingResponse(

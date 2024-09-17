@@ -68,7 +68,7 @@ class MatchRepository:
         try:
             # join MatchResults with GameMatch to get the round_number
             # if group number is None, then return result, else join with Team and filter by group_number
-            query = select(Team.group_number, MatchResults.match_id, Team.team_name, MatchResults.team_id, MatchResults.goals_scored, Team.registration_date_unix).join(Team, Team.team_id == MatchResults.team_id, isouter=True).join(GameMatch, GameMatch.match_id == MatchResults.match_id, isouter=True).where(GameMatch.round_number == round_number)
+            query = select(Team.group_number, MatchResults.match_id, Team.team_name, MatchResults.team_id, MatchResults.goals_scored, Team.registration_day_of_year).join(Team, Team.team_id == MatchResults.team_id, isouter=True).join(GameMatch, GameMatch.match_id == MatchResults.match_id, isouter=True).where(GameMatch.round_number == round_number)
             if group_number_filter != None:
                 query = query.where(Team.group_number == group_number_filter)
             result = await self.db.execute(query)
@@ -78,7 +78,7 @@ class MatchRepository:
                 team_name=row[2],
                 team_id=row[3],
                 goals_scored=row[4],
-                join_date_unix=row[5]
+                registration_day_of_year=row[5]
             ) for row in result.fetchall()]
         except SQLAlchemyError as e:
             raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")

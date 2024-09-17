@@ -12,7 +12,6 @@ MATCH_LOCK_KEY = "match_lock"
 class DistributedLock:
     def __init__(self, lock_key: str, ttl: int = 5):
         self.redis_url = Settings.get_instance().redis_url
-        print(self.redis_url)
         self.lock_key = lock_key
         self.ttl = ttl
         self.lock_value = str(uuid.uuid4()) 

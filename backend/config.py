@@ -13,6 +13,11 @@ class Settings:
         else:
             self.database_url = os.getenv("LOCAL_DATABASE_URL")
             self.redis_url = os.getenv("LOCAL_REDIS_URL")
+        self.round_qualify_count ={
+            1: int(os.getenv("ROUND_1_QUALIFY_COUNT", 4)),
+            2: int(os.getenv("ROUND_2_QUALIFY_COUNT", 1)),
+            3: int(os.getenv("ROUND_3_QUALIFY_COUNT", 1))
+        }
         
     @classmethod
     def get_instance(cls):

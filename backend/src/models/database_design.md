@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS team_tab (
     team_id TINYINT UNSIGNED PRIMARY KEY,
     -- only 12 teams in scenario < 255
     team_name VARCHAR(50) NOT NULL,
-    registration_date_unix BIGINT UNSIGNED NOT NULL,
+    registration_day_of_year BIGINT UNSIGNED NOT NULL,
     group_number TINYINT UNSIGNED NOT NULL
 ) ENGINE=InnoDB CHARACTER SET utf8;
 

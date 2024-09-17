@@ -8,6 +8,7 @@ from src.repositories.team import TeamRepository
 from src.schemas.match_results import BatchCreateMatchResultsRequest
 from fastapi import HTTPException
 from src.redis.lock import DistributedLock, MATCH_LOCK_KEY
+from config import Settings
 
 match_router = APIRouter()
 database = Database.get_instance()
@@ -45,5 +46,5 @@ async def get_match_rankings(round: int = None, group:int = None, db: AsyncSessi
         team_repository=TeamRepository(db),
         match_result_lock=DistributedLock(MATCH_LOCK_KEY)
     )
-    match_results = await match_results_controller.get_match_rankings(round_number=round, group_number_filter=group)
+    match_results = await match_results_controller.get_match_rankings(qualifying_count = Settings.get_instance().round_qualify_count.get(round,4) ,round_number=round, group_number_filter=group)
     return JSONResponse(content={"results":match_results.dict()}, status_code=200)

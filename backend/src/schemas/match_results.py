@@ -17,7 +17,7 @@ class MatchResultDetailed(BaseModel):
     team_id: int = Field(..., example=1, description="Unique identifier for the team")
     team_name: str = Field(..., example='Team A', description="Name of the team")
     goals_scored: int = Field(..., example=2, description="Number of goals scored by the team for the match")
-    join_date_unix: int = Field(..., example=1609459200, description="Date when the team joined the tournament in Unix timestamp")
+    registration_day_of_year: int = Field(..., example=1609459200, description="Date when the team joined the tournament in Unix timestamp")
 
 class CreateMatchResultsRequest(BaseModel):
     # request body for creating a new match result
