@@ -6,7 +6,7 @@ from config import Settings
 
 # Constant lock keys
 TEAM_LOCK_KEY = "team_lock"
-MATCH_RESULTS_LOCK_KEY = "match_results_lock"
+MATCH_LOCK_KEY = "match_lock"
 
 
 class DistributedLock:
