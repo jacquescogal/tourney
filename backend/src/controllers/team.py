@@ -33,23 +33,26 @@ class TeamController:
         if not await self.team_lock.get():
             raise HTTPException(status_code=500, detail="Failed to get team lock")
         # the lock will ensure that the limit of 12 teams is not exceeded
+        
+        try:
+            # get all teams
+            all_teams: List[Team] = await self.team_repository.get_teams_by_group()
+            if len(all_teams) + len(request_teams) > 12:
+                await self.team_lock.give()
+                raise HTTPException(status_code=400, detail="Transaction will exceed Team limit of 12")
 
-        # get all teams
-        all_teams: List[Team] = await self.team_repository.get_teams_by_group()
-        if len(all_teams) + len(request_teams) > 12:
+            # create teams 
+            teams: List[Team] = [Team(
+                team_name=team.team_name,
+                registration_date_unix=ddmm_to_unix(team.registration_date),
+                group_number=team.group_number
+            ) for team in request_teams]
+            if await self.team_repository.create_teams(teams) == True:
+                is_committed = await self.team_repository.commit_transaction()
+                await self.team_lock.give()
+                return is_committed
+            else:
+                await self.team_lock.give()
+                return False
+        finally:
             await self.team_lock.give()
-            raise HTTPException(status_code=400, detail="Transaction will exceed Team limit of 12")
-
-        # create teams 
-        teams: List[Team] = [Team(
-            team_name=team.team_name,
-            registration_date_unix=ddmm_to_unix(team.registration_date),
-            group_number=team.group_number
-        ) for team in request_teams]
-        if await self.team_repository.create_teams(teams) == True:
-            is_committed = await self.team_repository.commit_transaction()
-            await self.team_lock.give()
-            return is_committed
-        else:
-            await self.team_lock.give()
-            return False

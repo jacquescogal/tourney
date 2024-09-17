@@ -6,6 +6,11 @@ class MatchResultBase(BaseModel):
     team_name: str = Field(..., example='Team A', description="Name of the team")
     goals_scored: int = Field(..., example=2, description="Number of goals scored by the team for the match")
 
+class MatchResultSparse(BaseModel):
+    match_id: int = Field(..., example=1, description="Unique identifier for the match")
+    team_id: int = Field(..., example=1, description="Unique identifier for the team")
+    team_name: str = Field(..., example='Team A', description="Name of the team")
+
 class MatchResultDetailed(BaseModel):
     group_number: int = Field(..., example=1, description="Group number of the team")
     match_id: int = Field(..., example=1, description="Unique identifier for the match")

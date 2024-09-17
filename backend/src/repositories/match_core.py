@@ -3,7 +3,7 @@ from sqlalchemy.future import select
 from src.models.game_match import GameMatch
 from src.models.match_results import MatchResults
 from src.models.team import Team
-from src.schemas.match_results import MatchResultDetailed
+from src.schemas.match_results import MatchResultDetailed, MatchResultSparse
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from fastapi import HTTPException
 from typing import List
@@ -84,7 +84,21 @@ class MatchRepository:
             raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
         except HTTPException as e:
             raise HTTPException(status_code=e.status_code, detail=e.detail)
-    
+        
+    async def get_matchups_by_round_and_team_ids(self, round_number: int, team_ids: List[int]) -> List[MatchResultSparse]:
+        try:
+            query = select(Team.team_name, MatchResults.match_id,  MatchResults.team_id).join(GameMatch, GameMatch.match_id == MatchResults.match_id).where(GameMatch.round_number == round_number).where(MatchResults.team_id.in_(team_ids)).join(Team, Team.team_id == MatchResults.team_id)
+            result = await self.db.execute(query)
+            return [MatchResultSparse(
+                team_name=row[0],
+                match_id=row[1],
+                team_id=row[2]
+            ) for row in result.fetchall()]
+        except SQLAlchemyError as e:
+            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        except HTTPException as e:
+            raise HTTPException(status_code=e.status_code, detail=e.detail)
+
     async def rollback_transaction(self) -> bool:
         await self.db.rollback()
         return True

@@ -1,6 +1,6 @@
 from src.repositories.match_core import MatchRepository
 from src.repositories.team import TeamRepository
-from src.schemas.match_results import CreateMatchResultsRequest, MatchResultDetailed
+from src.schemas.match_results import CreateMatchResultsRequest, MatchResultDetailed, MatchResultSparse
 from src.models.match_results import MatchResults
 from src.models.team import Team
 from typing import List, Set, Dict
@@ -22,6 +22,8 @@ class MatchController:
         Creates Match and MatchResults records in the database
         """
 
+        match_up_dict: Dict[int, Set] = {} # team_name -> {opponent_team_name}
+        duplicate_match_ups = []
         match_ids: List[int] =[]
         team_name_set: Set[str] = set()
         self_match_game_ids: List[int] = []
@@ -31,6 +33,15 @@ class MatchController:
                 self_match_game_ids.append(match_result.match_id)
             team_name_set.add(match_result.result[0].team_name)
             team_name_set.add(match_result.result[1].team_name)
+            # check match up duplicates
+            if match_result.result[0].team_name in match_up_dict.setdefault(match_result.result[1].team_name, set()):
+                duplicate_match_ups.append((match_result.result[0].team_name, match_result.result[1].team_name))
+            if match_result.result[1].team_name in match_up_dict.setdefault(match_result.result[0].team_name, set()):
+                duplicate_match_ups.append((match_result.result[1].team_name, match_result.result[0].team_name))
+            match_up_dict[match_result.result[0].team_name].add(match_result.result[1].team_name)
+            match_up_dict[match_result.result[1].team_name].add(match_result.result[0].team_name)
+        if len(duplicate_match_ups) > 0:
+            raise HTTPException(status_code=400, detail="Duplicate match ups found: "+str(duplicate_match_ups))
         
         # check if self match games are present
         if len(self_match_game_ids) > 0:
@@ -62,35 +73,53 @@ class MatchController:
         # this lock prevents double write        
         if not await self.match_result_lock.get():
             raise HTTPException(status_code=500, detail="Failed to get match result lock")
-        
-        # check if matches already exists
-        existing_matches = await self.match_repository.get_game_matches_by_ids(match_ids)
-        if len(existing_matches) > 0:
-            raise HTTPException(status_code=400, detail="Matches already exist: "+str(existing_matches))
-        
-        # check if matches between teams already exist for a round
-        
-        # create matches and match results
-        game_matches: List[GameMatch] = [GameMatch(match_id=match_id, round_number=round_number) for match_id in match_ids]
-        is_game_matches_created = await self.match_repository.create_game_matches(game_matches)
-        if is_game_matches_created:
-            match_results: List[MatchResults] = [MatchResults(match_id=match_result.match_id, team_id=team_name_to_id_map[match_result.result[0].team_name], goals_scored=match_result.result[0].goals_scored) for match_result in request_match_results]
-            match_results.extend([MatchResults(match_id=match_result.match_id, team_id=team_name_to_id_map[match_result.result[1].team_name], goals_scored=match_result.result[1].goals_scored) for match_result in request_match_results])
-            try:
-                is_match_results_created = await self.match_repository.create_match_results(match_results)
-                if is_match_results_created:
-                    await self.match_repository.commit_transaction()
-                    await self.match_repository.commit_transaction()
-                    return True
+        try:
+            # check if matches already exists
+            existing_matches = await self.match_repository.get_game_matches_by_ids(match_ids)
+            if len(existing_matches) > 0:
+                raise HTTPException(status_code=400, detail="Matches already exist: "+str(existing_matches))
+            
+            # check if matches between teams already exist for a round
+            # TODO: check
+            match_ups: List[MatchResultSparse] = await self.match_repository.get_matchups_by_round_and_team_ids(round_number, list(team_name_to_id_map.values()))
+            match_id_opponent_map: Dict[int, int] = {} # match_id -> opponent_team_id, will set on first match_id natched
+            for match_up in match_ups:
+                if match_id_opponent_map.get(match_up.match_id, None) is None:
+                    match_id_opponent_map[match_up.match_id] = match_up.team_name
                 else:
+                    if match_up.team_name in match_up_dict[match_id_opponent_map[match_up.match_id]]:
+                        duplicate_match_ups.append((match_id_opponent_map[match_up.match_id], match_up.team_name))
+            if len(duplicate_match_ups) > 0:
+                await self.match_result_lock.give()
+                raise HTTPException(status_code=400, detail="Duplicate match ups found: "+str(duplicate_match_ups))
+
+            
+            # create matches and match results
+            game_matches: List[GameMatch] = [GameMatch(match_id=match_id, round_number=round_number) for match_id in match_ids]
+            is_game_matches_created = await self.match_repository.create_game_matches(game_matches)
+            if is_game_matches_created:
+                match_results: List[MatchResults] = [MatchResults(match_id=match_result.match_id, team_id=team_name_to_id_map[match_result.result[0].team_name], goals_scored=match_result.result[0].goals_scored) for match_result in request_match_results]
+                match_results.extend([MatchResults(match_id=match_result.match_id, team_id=team_name_to_id_map[match_result.result[1].team_name], goals_scored=match_result.result[1].goals_scored) for match_result in request_match_results])
+                try:
+                    is_match_results_created = await self.match_repository.create_match_results(match_results)
+                    if is_match_results_created:
+                        await self.match_repository.commit_transaction()
+                        await self.match_repository.commit_transaction()
+                        await self.match_result_lock.give()
+                        return True
+                    else:
+                        await self.match_result_lock.give()
+                        await self.match_repository.rollback_transaction()
+                except HTTPException as e:
                     await self.match_repository.rollback_transaction()
-            except HTTPException as e:
-                await self.match_repository.rollback_transaction()
-                raise HTTPException(status_code=e.status_code, detail=e.detail)
-            except Exception as e:
-                await self.match_repository.rollback_transaction()
-                raise HTTPException(status_code=500, detail=str(e))
-        return False
+                    raise HTTPException(status_code=e.status_code, detail=e.detail)
+                except Exception as e:
+                    await self.match_repository.rollback_transaction()
+                    raise HTTPException(status_code=500, detail=str(e))
+            self.match_result_lock.give()
+            return False
+        finally:
+            await self.match_result_lock.give()
     
     async def get_match_rankings(self, round_number: int, group_number_filter: int = None) -> GetRankingResponse:
         """
