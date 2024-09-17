@@ -24,11 +24,9 @@ class MatchController:
 
         match_up_dict: Dict[int, Set] = {} # team_name -> {opponent_team_name}
         duplicate_match_ups = []
-        match_ids: List[int] =[]
         team_name_set: Set[str] = set()
         self_match_game_ids: List[int] = []
         for match_result in request_match_results:
-            match_ids.append(match_result.match_id)
             if (match_result.result[0].team_name == match_result.result[1].team_name):
                 self_match_game_ids.append(match_result.match_id)
             team_name_set.add(match_result.result[0].team_name)
@@ -46,10 +44,6 @@ class MatchController:
         # check if self match games are present
         if len(self_match_game_ids) > 0:
             raise HTTPException(status_code=400, detail="Self match games are not allowed: "+str(self_match_game_ids))
-
-        # check match duplicates
-        if len(set(match_ids)) != len(match_ids):
-            raise HTTPException(status_code=400, detail="Duplicate match ids found in the request")
         
         # check if teams exist
         existing_teams:List[Team] = await self.team_repository.get_teams_by_team_names(list(team_name_set))
@@ -74,11 +68,6 @@ class MatchController:
         if not await self.match_result_lock.get():
             raise HTTPException(status_code=500, detail="Failed to get match result lock")
         try:
-            # check if matches already exists
-            existing_matches = await self.match_repository.get_game_matches_by_ids(match_ids)
-            if len(existing_matches) > 0:
-                raise HTTPException(status_code=400, detail="Matches already exist: "+str(existing_matches))
-            
             # check if matches between teams already exist for a round
             match_ups: List[MatchResultSparse] = await self.match_repository.get_matchups_by_round_and_team_ids(round_number, list(team_name_to_id_map.values()))
             match_id_opponent_map: Dict[int, int] = {} # match_id -> opponent_team_id, will set on first match_id natched
@@ -94,11 +83,18 @@ class MatchController:
 
             
             # create matches and match results
-            game_matches: List[GameMatch] = [GameMatch(match_id=match_id, round_number=round_number) for match_id in match_ids]
-            is_game_matches_created = await self.match_repository.create_game_matches(game_matches)
-            if is_game_matches_created:
-                match_results: List[MatchResults] = [MatchResults(match_id=match_result.match_id, team_id=team_name_to_id_map[match_result.result[0].team_name], goals_scored=match_result.result[0].goals_scored) for match_result in request_match_results]
-                match_results.extend([MatchResults(match_id=match_result.match_id, team_id=team_name_to_id_map[match_result.result[1].team_name], goals_scored=match_result.result[1].goals_scored) for match_result in request_match_results])
+            game_match_ids = await self.match_repository.create_game_matches(match_count=len(request_match_results), round_number=round_number)
+            if len(game_match_ids) > 0:
+                if len(game_match_ids) != len(request_match_results):
+                    await self.match_repository.rollback_transaction()
+                    await self.match_result_lock.give()
+                    raise HTTPException(status_code=500, detail="Failed to create game matches")
+                
+                match_results = []
+                cur_game_match_id = 0
+                for match_result in request_match_results:
+                    match_results.extend([MatchResults(match_id=game_match_ids[cur_game_match_id], team_id=team_name_to_id_map[match_result.result[0].team_name], goals_scored=match_result.result[0].goals_scored), MatchResults(match_id=game_match_ids[cur_game_match_id], team_id=team_name_to_id_map[match_result.result[1].team_name], goals_scored=match_result.result[1].goals_scored)])
+                    cur_game_match_id += 1
                 try:
                     is_match_results_created = await self.match_repository.create_match_results(match_results)
                     if is_match_results_created:

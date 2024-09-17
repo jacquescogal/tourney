@@ -14,15 +14,27 @@ class MatchRepository:
         # inject db
         self.db = db
 
-    async def create_game_matches(self, game_matches: List[GameMatch]) -> bool:
+    async def create_game_matches(self, match_count: int, round_number: int) -> List[int]: 
         """
         Creates new game matches as batch.
+
+        Args:
+        match_count: int
+        round_number: int
+
+        Returns:
+        inserted_ids: List[int]: A list of match ids that were inserted.
         """
         try:
-            for game_match in game_matches:
-                self.db.add(game_match)
+            matches_to_create = [
+                GameMatch(round_number=round_number)
+                for _ in range(match_count)
+            ]
+            self.db.add_all(matches_to_create)
             try:
                 await self.db.flush()
+                inserted_ids = [match.match_id for match in matches_to_create]
+                return inserted_ids
             except IntegrityError as e:
                 await self.rollback_transaction()
                 raise HTTPException(status_code=400, detail=f"Game Match already exists: {e.params[0]}")
@@ -32,7 +44,6 @@ class MatchRepository:
         except HTTPException as e:
             await self.rollback_transaction()
             raise HTTPException(status_code=e.status_code, detail=e.detail)
-        return True
 
     async def get_game_matches_by_ids(self, match_ids: List[int]) -> GameMatch:
         """

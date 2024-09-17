@@ -21,7 +21,6 @@ class MatchResultDetailed(BaseModel):
 
 class CreateMatchResultsRequest(BaseModel):
     # request body for creating a new match result
-    match_id: int = Field(..., example=1, description="Unique identifier for the match")
     result: List[MatchResultBase] = Field(..., example=[{"team_name": "Team A", "goals_scored": 2},{"team_name": "Team B", "goals_scored": 2}], description="List of team names and goals scored")
 
     @field_validator("result")

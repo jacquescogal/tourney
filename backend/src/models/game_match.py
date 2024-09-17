@@ -9,7 +9,7 @@ class GameMatch(Base):
     """
     __tablename__ = 'game_match_tab'
 
-    match_id = Column(BIGINT(unsigned=True), primary_key=True)
+    match_id = Column(BIGINT(unsigned=True), primary_key=True, autoincrement=True)
     round_number = Column(TINYINT(unsigned=True), nullable=False, index=True)
 
     match_results = relationship('MatchResults', back_populates='game_match')
