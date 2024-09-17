@@ -9,8 +9,10 @@ class Settings:
         self.environment = os.getenv("ENVIRONMENT", "local")
         if self.environment == "production"  or self.environment == "staging":
             self.database_url = os.getenv("AWS_DATABASE_URL")
+            self.redis_url = os.getenv("LOCAL_REDIS_URL")
         else:
             self.database_url = os.getenv("LOCAL_DATABASE_URL")
+            self.redis_url = os.getenv("LOCAL_REDIS_URL")
         
     @classmethod
     def get_instance(cls):
