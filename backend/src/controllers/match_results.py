@@ -1,12 +1,15 @@
 from src.repositories.match_results import MatchResultsRepository
 from src.repositories.game_match import GameMatchRepository
 from src.repositories.team import TeamRepository
-from src.schemas.match_results import CreateMatchResultsRequest
+from src.schemas.match_results import CreateMatchResultsRequest, MatchResultDetailed
 from src.models.match_results import MatchResults
 from src.models.team import Team
-from typing import List, Set
+from typing import List, Set, Dict
 from fastapi import HTTPException
 from src.models.game_match import GameMatch
+from src.schemas.rank import TeamRank, GroupRanking, GetRankingResponse
+from src.utils.date_util import unix_to_ddmm
+import json
 class MatchResultsController:
     def __init__(self, match_results_repository: MatchResultsRepository, game_match_repository: GameMatchRepository, team_repository: TeamRepository):
         # inject team_repository
@@ -79,4 +82,78 @@ class MatchResultsController:
                 await self.game_match_repository.rollback_transaction()
                 raise HTTPException(status_code=500, detail=str(e))
         return False
+    
+    async def get_match_ranking(self, round_number: int, group_number_filter: int = None) -> GetRankingResponse:
+        """
+        Gets match results for a given round and group number
+        """
+        match_results: List[MatchResultDetailed] = await self.match_results_repository.get_match_results_by_round(round_number, group_number_filter)
+        # convert match_result.goals scored to points for teams in the match
+        match_maker:Dict[int,MatchResultDetailed] = {}
+        # team_id -> TeamRank
+        team_rank_mapper: Dict[int, TeamRank] = {}
+        # team_id -> group_number
+        group_mapper: Dict[int, int] = {}
+        """
+        scoring rules:
+        1. Highest total match points (3 points for win, 1 point for draw, 0 points for loss)
+        2. Highest total goals scored
+        3. Highest alternate total match points (5 points for win, 3 points for draw, 0 points for loss)
+        4. Earliest registration date
+        """
+        # create a match maker to get the match results
+        for result in match_results:
+            if match_maker.get(result.match_id, None) is None:
+                match_maker[result.match_id] = result
+            else:
+                team_a_detail = match_maker[result.match_id]
+                team_b_detail = result
+                group_mapper.setdefault(team_a_detail.team_id, team_a_detail.group_number)
+                group_mapper.setdefault(team_b_detail.team_id, team_b_detail.group_number)
+                team_rank_mapper.setdefault(team_a_detail.team_id, TeamRank(team_id=team_a_detail.team_id, position=1, is_tied=False, team_name=team_a_detail.team_name, goals=team_a_detail.goals_scored,wins=0, draws=0, losses=0,join_date_unix=team_a_detail.join_date_unix, join_date_ddmm=unix_to_ddmm(team_a_detail.join_date_unix)))
+                team_rank_mapper.setdefault(team_b_detail.team_id, TeamRank(team_id=team_b_detail.team_id, position=1, is_tied=False, team_name=team_b_detail.team_name, goals=team_b_detail.goals_scored,wins=0, draws=0, losses=0,join_date_unix=team_b_detail.join_date_unix, join_date_ddmm=unix_to_ddmm(team_b_detail.join_date_unix)))
+                if team_a_detail.goals_scored > team_b_detail.goals_scored:
+                    team_rank_mapper[team_a_detail.team_id].wins += 1
+                    team_rank_mapper[team_b_detail.team_id].losses += 1
+                elif team_a_detail.goals_scored < team_b_detail.goals_scored:
+                    team_rank_mapper[team_a_detail.team_id].losses += 1
+                    team_rank_mapper[team_b_detail.team_id].wins += 1
+                else:
+                    team_rank_mapper[team_a_detail.team_id].draws += 1
+                    team_rank_mapper[team_b_detail.team_id].draws += 1
+        # split into groups then sort
+        group_dict: Dict[int, TeamRank] = {}
+        for team in team_rank_mapper.values():
+            group_dict.setdefault(group_mapper[team.team_id], []).append(team)
 
+        # get all teams in the group, including those that did not play yet
+        all_teams = await self.team_repository.get_teams_by_group(group_number_filter)
+        for team in all_teams:
+            if team_rank_mapper.get(team.team_id, None) is None:
+                group_dict.setdefault(team.group_number, []).append(TeamRank(team_id=team.team_id, position=1, is_tied=False, team_name=team.team_name, goals=0, wins=0, draws=0, losses=0, join_date_unix=team.registration_date_unix, join_date_ddmm=unix_to_ddmm(team.registration_date_unix)))
+        for group_number in group_dict.keys():
+            group_dict[group_number] = sorted(group_dict[group_number], key=lambda x: (self._get_score(x), x.goals, self._get_alternate_score(x), -x.join_date_unix), reverse=True)
+            cur_pos = 1
+            for i in range(1, len(group_dict[group_number])):
+                if self._get_score(group_dict[group_number][i]) == self._get_score(group_dict[group_number][i-1]) and group_dict[group_number][i].goals == group_dict[group_number][i-1].goals and self._get_alternate_score(group_dict[group_number][i]) == self._get_alternate_score(group_dict[group_number][i-1]) and group_dict[group_number][i].join_date_unix == group_dict[group_number][i-1].join_date_unix:
+                    group_dict[group_number][i-1].is_tied = True
+                    group_dict[group_number][i].is_tied = True
+                else:
+                    group_dict[group_number][i].is_tied = False
+                    cur_pos += 1
+                group_dict[group_number][i].position = cur_pos
+        
+        # return structured response
+        return GetRankingResponse(
+            round_number=round_number,
+            group_rankings=[GroupRanking(
+                group_number=group_number,
+                team_rankings=[team for team in group_dict[group_number]]
+            ) for group_number in group_dict.keys()]
+        )
+    
+    def _get_score(self, team: TeamRank) -> int:
+        return team.wins * 3 + team.draws
+    
+    def _get_alternate_score(self, team: TeamRank) -> int:
+        return team.wins * 5 + team.draws * 3 + team.losses

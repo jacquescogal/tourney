@@ -28,7 +28,7 @@ class TeamController:
         # create teams 
         teams: List[Team] = [Team(
             team_name=team.team_name,
-            registration_date_unix=0,
+            registration_date_unix=ddmm_to_unix(team.registration_date),
             group_number=team.group_number
         ) for team in request_teams]
         if await self.team_repository.create_teams(teams) == True:

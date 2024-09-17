@@ -65,6 +65,28 @@ class TeamRepository:
         except SQLAlchemyError as e:
             raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
         
+    async def get_teams_by_group(self, group_filter_filter:int = None) -> List[Team]:
+        """
+        Gets teams by their group number.
+
+        Args:
+        group_filter: int: The group number to filter by.
+
+        Returns:
+        teams: List[Team]: A list of teams that belong to the group number.
+
+        Raises:
+        SQLAlchemyError: If any error occurs during the database query.
+        """
+        try:
+            query = select(Team.team_id,Team.team_name, Team.registration_date_unix, Team.group_number)
+            if group_filter_filter != None:
+                query = query.where(Team.group_number == group_filter_filter)
+            result = await self.db.execute(query)
+            return [Team(team_id=row[0], team_name=row[1], registration_date_unix=row[2], group_number=row[3]) for row in result.fetchall()]
+        except SQLAlchemyError as e:
+            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        
     async def rollback_transaction(self) -> bool:
         await self.db.rollback()
         return True
@@ -75,7 +97,4 @@ class TeamRepository:
         except SQLAlchemyError as e:
             await self.db.rollback()
             raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
-        except HTTPException as e:
-            await self.db.rollback()
-            raise HTTPException(status_code=e.status_code, detail=e.detail)
         return True

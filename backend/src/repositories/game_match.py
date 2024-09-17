@@ -53,7 +53,4 @@ class GameMatchRepository:
         except SQLAlchemyError as e:
             await self.db.rollback()
             raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
-        except HTTPException as e:
-            await self.db.rollback()
-            raise HTTPException(status_code=e.status_code, detail=e.detail)
         return True
