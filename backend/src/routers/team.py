@@ -24,3 +24,13 @@ async def create_team(request: BatchRegisterTeamRequest, db: AsyncSession = Depe
     else:
         return JSONResponse(content={"detail":"teams creation failed"}, status_code=500)
 
+@team_router.get("/teams/{team_id}", tags=["team"])
+async def get_team(team_id: int, db: AsyncSession = Depends(database.get_session)):
+    """
+    API endpoint to get team details by team ID.
+    """
+    team_controller = TeamController(TeamRepository(db), DistributedLock(TEAM_LOCK_KEY))
+    team = await team_controller.get_team_details_for_id(team_id)
+    if team is None:
+        return JSONResponse(content={"detail":"team not found"}, status_code=404)
+    return JSONResponse(content=team.dict(), status_code=200)

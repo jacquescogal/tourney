@@ -1,10 +1,11 @@
 from src.repositories.team import TeamRepository
-from src.schemas.team import RegisterTeamRequest
+from src.schemas.team import RegisterTeamRequest, TeamDetails, TeamMatchUpDetail
 from src.models.team import Team
 from typing import List
 from fastapi import HTTPException
-from src.utils.date_util import ddmm_to_day_of_year
+from src.utils.date_util import ddmm_to_day_of_year, day_of_year_to_ddmm
 from src.redis.lock import DistributedLock
+
 
 class TeamController:
     def __init__(self, team_repository: TeamRepository, team_lock: DistributedLock):
@@ -56,3 +57,15 @@ class TeamController:
                 return False
         finally:
             await self.team_lock.give()
+    
+    async def get_team_details_for_id(self, team_id: int) -> TeamDetails:
+        match_ups = await self.team_repository.get_team_matchups_for_id(team_id)
+        team:Team = (await self.team_repository.get_teams_by_ids([team_id]))[0]
+        return TeamDetails(
+            team_id=team.team_id,
+            team_name=team.team_name,
+            registration_date=day_of_year_to_ddmm(team.registration_day_of_year),
+            registration_day_of_year=team.registration_day_of_year,
+            group_number=team.group_number,
+            match_ups=match_ups
+        )
