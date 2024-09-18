@@ -5,10 +5,7 @@ import "@ag-grid-community/styles/ag-grid.css";
 import "@ag-grid-community/styles/ag-theme-quartz.css";
 import axios from "axios";
 import { useEffect, useState } from "react";
-import {
-  ITeamRanking,
-  ITeamRankingRow,
-} from "../../types/leaderboard";
+import { IMatchRankingResponse, ITeamRanking, ITeamRankingRow } from "../../types/leaderboard";
 import { parse } from "date-fns";
 import MatchService from "../../api/MatchService";
 import { useNavigate } from "react-router-dom";
@@ -18,7 +15,7 @@ ModuleRegistry.registerModules([ClientSideRowModelModule]);
 
 const Leaderboard = () => {
   return (
-    <div className="bg-gt-blue h-screen w-article-wide p-4">
+    <div className="h-screen-less-header w-article-wide p-4">
       <div className="h-full w-full flex flex-col">
         <BoardRanking roundNumber={1} groupNumber={1} />
         <BoardRanking roundNumber={1} groupNumber={2} />
@@ -32,36 +29,36 @@ const BoardRanking = (props: { roundNumber: number; groupNumber: number }) => {
   const [rowData, setRowData] = useState<ITeamRankingRow[]>([]);
 
   // Column Definitions: Defines & controls grid columns.
-  const colDefs: ColDef<ITeamRankingRow>[] = ([
-    { headerName: "Rank", field: "position" },
-    { headerName: "Team", field: "team_name" },
-    { headerName: "W/D/L", field: "wdl" },
-    { headerName: "Total Goals", field: "goals" },
+  const colDefs: ColDef<ITeamRankingRow>[] = [
+    { headerName: "Rank", field: "position", resizable: false , flex:1},
+    { headerName: "Team", field: "team_name", flex: 2},
+    { headerName: "W/D/L", field: "wdl" , flex: 1},
+    { headerName: "Total Goals", field: "goals", flex:1},
     {
       headerName: "Joined",
       field: "registration_date_ddmm",
       comparator: (valueA, valueB) => {
         const dateA = parse(valueA, "dd/MM", new Date());
         const dateB = parse(valueB, "dd/MM", new Date());
-        console.log(dateA, dateB);
         if (dateA == dateB) return 0;
         return dateA > dateB ? 1 : -1;
       },
+      flex:2
     },
-  ]);
+  ];
 
   const defaultColDef: ColDef = {
-    flex: 1,
   };
 
   useEffect(() => {
     // Fetch match rankings from the API
     const fetchMatchRankings = async () => {
       try {
-        const data = await MatchService.getMatchRankings({
+        const response = await MatchService.getMatchRankings({
           roundNumber: props.roundNumber,
-          groupNumber: props.groupNumber
-        })
+          groupNumber: props.groupNumber,
+        });
+        const data: IMatchRankingResponse = await response.json();
 
         // Check if the response contains the data and update the state
         const teamRankings: ITeamRanking[] =
@@ -89,25 +86,30 @@ const BoardRanking = (props: { roundNumber: number; groupNumber: number }) => {
   }, [props.groupNumber, props.roundNumber]);
 
   return (
-    <div
-      className={"ag-theme-quartz-dark"}
-      style={{ width: "100%", height: "100%" }}
-    >
-      <AgGridReact
-        rowData={rowData}
-        columnDefs={colDefs}
-        defaultColDef={defaultColDef}
-        onRowClicked={e=>{
-          nav(GOTO_TEAM_DETAIL_PAGE(e.data.team_id))
-        }}
-        gridOptions={{
-          rowClass: "cursor-pointer",
-          rowClassRules:{
-            'bg-green-600': (params) =>{return params.data.is_qualified === true}
-          }
-        }}
-      />
-    </div>
+    <>
+      <h1>Group {props.groupNumber}</h1>
+      <div
+        className={"ag-theme-quartz-dark"}
+        style={{ width: "100%", height: "100%" }}
+      >
+        <AgGridReact
+          rowData={rowData}
+          columnDefs={colDefs}
+          defaultColDef={defaultColDef}
+          onRowClicked={(e) => {
+            nav(GOTO_TEAM_DETAIL_PAGE(e.data.team_id));
+          }}
+          gridOptions={{
+            rowClass: "cursor-pointer",
+            rowClassRules: {
+              "bg-green-600": (params) => {
+                return params.data.is_qualified === true;
+              },
+            },
+          }}
+        />
+      </div>
+    </>
   );
 };
 

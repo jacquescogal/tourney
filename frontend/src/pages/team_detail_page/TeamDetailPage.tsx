@@ -15,7 +15,8 @@ const TeamDetailPage = () => {
   useEffect(() => {
     const fetchTeamDetails = async (team_id:number) => {
       try {
-        const data = await TeamService.fetchTeamDetailPage(team_id);
+        const response = await TeamService.fetchTeamDetailPage(team_id);
+        const data:ITeamDetails = await response.json();
         const rawMatchupDetails: ITeamMatchUpDetail[] = data.match_ups;
         const parsedMatchupDetailsRows: ITeamMatchUpDetailRow[] = [];
         rawMatchupDetails.forEach((md:ITeamMatchUpDetail) => {

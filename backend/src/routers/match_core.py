@@ -37,6 +37,7 @@ async def get_match_rankings(round: int = None, group:int = None, db: AsyncSessi
     """
     API endpoint to get all match results.
     """
+    print(round, group)
     if round is None:
         return HTTPException(status_code=400, detail="Round number is required")
     elif round < 1 or round > 3:

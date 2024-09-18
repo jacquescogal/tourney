@@ -15,8 +15,8 @@ ModuleRegistry.registerModules([ClientSideRowModelModule]);
 
 const Teamboard = () => {
   return (
-    <div className="bg-gt-blue h-screen w-article-wide-1/2 p-4">
-      <div className="h-full w-full flex flex-col">
+    <div className="h-screen-less-header w-article-wide p-4">
+      <div className="h-full w-full flex flex-col relative">
         <BoardTeams />
       </div>
     </div>
@@ -51,8 +51,8 @@ const BoardTeams = () => {
     // Fetch all teams from the API
     const fetchTeams = async () => {
       try {
-        const data = await TeamService.fetchTeams();
-        console.log(data);
+        const response = await TeamService.fetchTeams();
+        const data: ITeam[] = await response.json();
         setRowData(data);
       } catch (error) {
         console.log(error);
@@ -68,10 +68,11 @@ const BoardTeams = () => {
     fetchTeams();
   }, []);
 
-  return (
+  return (<>
+      <h1 className="h-[25px]">Teams</h1>
     <div
-      className={"ag-theme-quartz-dark"}
-      style={{ width: "100%", height: "100%" }}
+      className={"ag-theme-quartz-dark absolute bottom-0 h-[calc(100%-25px)]"}
+      style={{ width: "100%" }}
     >
       <AgGridReact
         rowData={rowData}
@@ -89,7 +90,7 @@ const BoardTeams = () => {
           },
         }}
       />
-    </div>
+    </div></>
   );
 };
 
