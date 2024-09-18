@@ -6,12 +6,11 @@ import "@ag-grid-community/styles/ag-theme-quartz.css";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import {
-  IMatchRankingResponse,
   ITeamRanking,
   ITeamRankingRow,
-} from "../../interfaces/leaderboard";
-import { GET_MATCH_RANKINGS } from "../../api-routes/match-core";
+} from "../../types/leaderboard";
 import { parse } from "date-fns";
+import MatchService from "../../api/MatchService";
 
 ModuleRegistry.registerModules([ClientSideRowModelModule]);
 
@@ -20,7 +19,7 @@ const Leaderboard = () => {
     <div className="bg-gt-blue h-screen w-article-wide p-4">
       <div className="h-full w-full flex flex-col">
         <BoardRanking roundNumber={1} groupNumber={1} />
-        <BoardRanking roundNumber={1} groupNumber={3} />
+        <BoardRanking roundNumber={1} groupNumber={2} />
       </div>
     </div>
   );
@@ -56,19 +55,14 @@ const BoardRanking = (props: { roundNumber: number; groupNumber: number }) => {
     // Fetch match rankings from the API
     const fetchMatchRankings = async () => {
       try {
-        const response = await axios.get<IMatchRankingResponse>(
-          GET_MATCH_RANKINGS(),
-          {
-            params: {
-              round: props.roundNumber,
-              group: props.groupNumber,
-            },
-          }
-        );
+        const data = await MatchService.getMatchRankings({
+          roundNumber: props.roundNumber,
+          groupNumber: props.groupNumber
+        })
 
         // Check if the response contains the data and update the state
         const teamRankings: ITeamRanking[] =
-          response.data.group_rankings[0].team_rankings;
+          data.group_rankings[0].team_rankings;
         const teamRankingsRow: ITeamRankingRow[] = [];
         teamRankings.forEach((tr) => {
           const trr: ITeamRankingRow = {

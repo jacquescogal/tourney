@@ -45,7 +45,23 @@ class TeamRepository:
             await self.rollback_transaction()
             raise HTTPException(status_code=e.status_code, detail=e.detail)
         return True
-    
+    async def get_teams(self) -> List[Team]:
+        """
+        Gets all teams.
+
+        Returns:
+        teams: List[Team]: A list of all teams.
+
+        Raises:
+        SQLAlchemyError: If any error occurs during the database query.
+        """
+        try:
+            query = select(Team.team_id,Team.team_name, Team.registration_day_of_year, Team.group_number)
+            result = await self.db.execute(query)
+            return [Team(team_id=row[0], team_name=row[1], registration_day_of_year=row[2], group_number=row[3]) for row in result.fetchall()]
+        except SQLAlchemyError as e:
+            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        
     async def get_teams_by_team_names(self, team_names: List[str]) -> List[Team]:
         """
         Checks the existence of teams by their names.

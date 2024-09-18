@@ -19,3 +19,12 @@ export type RegisterTeamRequest = z.infer<typeof RegisterTeamRequestSchema>;
 export type BatchRegisterTeamRequest = {
     teams: RegisterTeamRequest[]
 }
+
+// For teamboard
+export interface ITeam {
+  team_id: number;
+  team_name: string;
+  registration_day_of_year: number;
+  registration_date_ddmm: string;
+  group_number: number;
+}

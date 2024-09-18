@@ -15,11 +15,11 @@ class TeamRank(BaseModel):
     registration_day_of_year: int = Field(..., example=1609459200, description="Date when the team joined the tournament in Unix timestamp")
 class GroupRanking(BaseModel):
     group_number: int = Field(..., example=1, description="Group number of the team")
-    team_rankings: List[TeamRank] = Field(..., example=[{"position":1,"team_id":1,"team_name":"Team A","wins":2,"draws":1,"losses":0,"registration_date":"01/01"}], description="List of team rankings in the group")
+    team_rankings: List[TeamRank] = Field(..., example=[{"position":1,"team_id":1,"team_name":"Team A","wins":2,"draws":1,"losses":0,"registration_date_ddmm":"01/01"}], description="List of team rankings in the group")
 
 class GetRankingResponse(BaseModel):
     round_number: int = Field(..., example=1, description="Round number for the matches")
-    group_rankings: List[GroupRanking] = Field(..., example=[{"group_number":1,"team_rankings":[{"position":1,"team_id":1,"team_name":"Team A","wins":2,"draws":1,"losses":0,"registration_date":"01/01"}]}], description="List of group rankings for the round")
+    group_rankings: List[GroupRanking] = Field(..., example=[{"group_number":1,"team_rankings":[{"position":1,"team_id":1,"team_name":"Team A","wins":2,"draws":1,"losses":0,"registration_date_ddmm":"01/01"}]}], description="List of group rankings for the round")
 
     @field_validator("round_number")
     def validate_round_number(cls, v):
