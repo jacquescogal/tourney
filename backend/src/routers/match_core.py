@@ -47,4 +47,4 @@ async def get_match_rankings(round: int = None, group:int = None, db: AsyncSessi
         match_result_lock=DistributedLock(MATCH_LOCK_KEY)
     )
     match_results = await match_results_controller.get_match_rankings(qualifying_count = Settings.get_instance().round_qualify_count.get(round,4) ,round_number=round, group_number_filter=group)
-    return JSONResponse(content={"results":match_results.dict()}, status_code=200)
+    return JSONResponse(content=match_results.dict(), status_code=200)

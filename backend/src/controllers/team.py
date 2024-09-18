@@ -33,7 +33,7 @@ class TeamController:
         # acquire lock
         if not await self.team_lock.get():
             raise HTTPException(status_code=500, detail="Failed to get team lock")
-        # the lock will ensure that the limit of 12 teams is not exceeded
+        # the lock will ensure that the limit of 6 teams for each group is not exceeded
         
         try:
             # get all teams

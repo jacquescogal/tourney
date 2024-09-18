@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { BatchRegisterTeamRequest, RegisterTeamRequest, RegisterTeamRequestSchema } from '../../types/teams';
+import { BatchRegisterTeamRequest, RegisterTeamRequest, RegisterTeamRequestSchema } from '../../types/team';
 import { z } from 'zod';
 
 
@@ -21,7 +21,7 @@ const CreateTeam = () => {
                 console.log("error", "not length 3")
                 return
             }
-            const [teamName, registrationDate, groupNumber] = [splitLine[0], splitLine[1], Number(splitLine[2])];
+            const [teamName, registrationDate, groupNumber] = [String(splitLine[0]), splitLine[1], Number(splitLine[2])];
             const registrationTeamRequest: RegisterTeamRequest = {
                 team_name: teamName,
                 registration_date: registrationDate,
@@ -55,6 +55,7 @@ const CreateTeam = () => {
               alert('Form submitted successfully!');
               setInputValue('');  // Reset the form
             } else {
+                console.log(await response.json())
               alert('Failed to submit the form');
             }
           } catch (error) {
