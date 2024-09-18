@@ -28,3 +28,24 @@ export interface ITeam {
   registration_date_ddmm: string;
   group_number: number;
 }
+
+// For TeamDetailPage
+// Define the types based on your FastAPI response
+export interface ITeamMatchUpDetail {
+  opponent: string;
+  round_number: number;
+  match_id: number;
+  goals_scored: number;
+  goals_conceded: number;
+}
+
+export interface ITeamMatchUpDetailRow extends ITeamMatchUpDetail{
+  goals_for_againt: string;
+}
+
+export interface ITeamDetails {
+  team_name: string;
+  registration_date_ddmm: string;
+  group_number: number;
+  match_ups: ITeamMatchUpDetail[];
+}

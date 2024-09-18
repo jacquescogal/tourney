@@ -15,6 +15,8 @@ export default {
         'test-green':'#00A300'
       },
       spacing: {
+        'header': '80px',
+        'screen-less-header': 'calc(100vh - 80px)',
         'article-wide': '700px',
         'article-wide-1/2': '350px'
       }

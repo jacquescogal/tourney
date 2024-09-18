@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from src.database.database import Database
 from src.repositories.team import TeamRepository
 from src.controllers.team import TeamController
-from src.schemas.team import BatchRegisterTeamRequest, TeamBase
+from src.schemas.team import BatchRegisterTeamRequest, TeamBase,TeamDetails
 from src.redis.lock import DistributedLock, TEAM_LOCK_KEY
 from typing import List
 
@@ -40,7 +40,7 @@ async def get_team(team_id: int, db: AsyncSession = Depends(database.get_session
     API endpoint to get team details by team ID.
     """
     team_controller = TeamController(TeamRepository(db))
-    team = await team_controller.get_team_details_for_id(team_id)
+    team:TeamDetails = await team_controller.get_team_details_for_id(team_id)
     if team is None:
         return JSONResponse(content={"detail":"team not found"}, status_code=404)
     return JSONResponse(content=team.dict(), status_code=200)

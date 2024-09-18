@@ -8,6 +8,8 @@ import { useEffect, useState } from "react";
 import { parse } from "date-fns";
 import { ITeam } from "../../types/team";
 import TeamService from "../../api/teamService";
+import { GOTO_TEAM_DETAIL_PAGE } from "../../routes/team";
+import { useNavigate } from "react-router-dom";
 
 ModuleRegistry.registerModules([ClientSideRowModelModule]);
 
@@ -22,23 +24,24 @@ const Teamboard = () => {
 };
 
 const BoardTeams = () => {
+  const nav = useNavigate();
   const [rowData, setRowData] = useState<ITeam[]>([]);
 
   // Column Definitions: Defines & controls grid columns.
-  const colDefs: ColDef<ITeam>[] = ([
+  const colDefs: ColDef<ITeam>[] = [
     { headerName: "Group", field: "group_number" },
     { headerName: "Team", field: "team_name" },
     {
-        headerName: "Joined",
-        field: "registration_date_ddmm",
-        comparator: (valueA, valueB) => {
-          const dateA = parse(valueA, "dd/MM", new Date());
-          const dateB = parse(valueB, "dd/MM", new Date());
-          if (dateA == dateB) return 0;
-          return dateA > dateB ? 1 : -1;
-        },
+      headerName: "Joined",
+      field: "registration_date_ddmm",
+      comparator: (valueA, valueB) => {
+        const dateA = parse(valueA, "dd/MM", new Date());
+        const dateB = parse(valueB, "dd/MM", new Date());
+        if (dateA == dateB) return 0;
+        return dateA > dateB ? 1 : -1;
       },
-  ]);
+    },
+  ];
 
   const defaultColDef: ColDef = {
     flex: 1,
@@ -49,10 +52,10 @@ const BoardTeams = () => {
     const fetchTeams = async () => {
       try {
         const data = await TeamService.fetchTeams();
-        console.log(data)
+        console.log(data);
         setRowData(data);
       } catch (error) {
-        console.log(error)
+        console.log(error);
         // TODO: Handle error (e.g., network issues or invalid parameters)
         if (axios.isAxiosError(error)) {
           //   setError(error.response?.data.detail || "An error occurred");
@@ -74,10 +77,16 @@ const BoardTeams = () => {
         rowData={rowData}
         columnDefs={colDefs}
         defaultColDef={defaultColDef}
+        onRowClicked={(e) => {
+          nav(GOTO_TEAM_DETAIL_PAGE(e.data.team_id));
+        }}
         gridOptions={{
-          rowClassRules:{
-            'bg-green-600': (params) =>{return params.data.is_qualified === true}
-          }
+          rowClass: "cursor-pointer",
+          rowClassRules: {
+            "bg-green-600": (params) => {
+              return params.data.is_qualified === true;
+            },
+          },
         }}
       />
     </div>

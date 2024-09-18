@@ -12,16 +12,24 @@ import json
 from src.redis.lock import DistributedLock
 class MatchController:
     def __init__(self, match_repository: MatchRepository, team_repository: TeamRepository, match_result_lock: DistributedLock):
-        # inject team_repository
+        # inject repositories
         self.match_repository = match_repository
         self.team_repository = team_repository
+
+        # lock with unique lock value for instance
         self.match_result_lock = match_result_lock
 
     async def create_results(self, request_match_results: List[CreateMatchResults], round_number: int) -> bool:
         """
-        Creates Match and MatchResults records in the database
-        """
+        Creates Match and MatchResults records in the database according to round number and match results provided.
 
+        Args:
+        request_match_results: List[CreateMatchResults]: List of match results to be created
+        round_number: int: Round number for which the match results are to be created
+
+        Returns:
+        is_successful: bool: True if match results are created successfully, False otherwise
+        """
         match_up_dict: Dict[int, Set] = {} # team_name -> {opponent_team_name}
         duplicate_match_ups = []
         team_name_set: Set[str] = set()
@@ -31,7 +39,7 @@ class MatchController:
                 self_match_game_ids.append((match_result.result[0].team_name, match_result.result[1].team_name))
             team_name_set.add(match_result.result[0].team_name)
             team_name_set.add(match_result.result[1].team_name)
-            # check match up duplicates
+            # check match up duplicates within request
             if match_result.result[0].team_name in match_up_dict.setdefault(match_result.result[1].team_name, set()):
                 duplicate_match_ups.append((match_result.result[0].team_name, match_result.result[1].team_name))
             if match_result.result[1].team_name in match_up_dict.setdefault(match_result.result[0].team_name, set()):
@@ -45,7 +53,7 @@ class MatchController:
         if len(self_match_game_ids) > 0:
             raise HTTPException(status_code=400, detail="Self match games are not allowed: "+str(self_match_game_ids))
         
-        # check if teams exist
+        # check if teams exist in database
         existing_teams:List[Team] = await self.team_repository.get_teams_by_team_names(list(team_name_set))
         if len(existing_teams) != len(team_name_set):
             raise HTTPException(status_code=400, detail="Teams do not exist: "+str(team_name_set - set([team.team_name for team in existing_teams])))
@@ -55,7 +63,7 @@ class MatchController:
             team_name_to_id_map[team.team_name] = team.team_id
             team_name_to_group_map[team.team_name] = team.group_number
 
-        # if the round is 1 or 2 and not 3(final round), don't allow cross group matches
+        # if the round is 1 or 2 and not 3(assumption: final round), don't allow cross group matches
         if round_number < 3:
             for match_result in request_match_results:
                 if team_name_to_group_map[match_result.result[0].team_name] != team_name_to_group_map[match_result.result[1].team_name]:

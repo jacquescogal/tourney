@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { GET_MATCH_RANKINGS } from '../api-routes/match-core';
+import { GET_MATCH_RANKINGS } from '../api_routes/match-core';
 import { IMatchRankingResponse } from '../types/leaderboard';
 
 class MatchService {

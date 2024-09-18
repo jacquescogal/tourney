@@ -11,6 +11,8 @@ import {
 } from "../../types/leaderboard";
 import { parse } from "date-fns";
 import MatchService from "../../api/MatchService";
+import { useNavigate } from "react-router-dom";
+import { GOTO_TEAM_DETAIL_PAGE } from "../../routes/team";
 
 ModuleRegistry.registerModules([ClientSideRowModelModule]);
 
@@ -26,6 +28,7 @@ const Leaderboard = () => {
 };
 
 const BoardRanking = (props: { roundNumber: number; groupNumber: number }) => {
+  const nav = useNavigate();
   const [rowData, setRowData] = useState<ITeamRankingRow[]>([]);
 
   // Column Definitions: Defines & controls grid columns.
@@ -94,7 +97,11 @@ const BoardRanking = (props: { roundNumber: number; groupNumber: number }) => {
         rowData={rowData}
         columnDefs={colDefs}
         defaultColDef={defaultColDef}
+        onRowClicked={e=>{
+          nav(GOTO_TEAM_DETAIL_PAGE(e.data.team_id))
+        }}
         gridOptions={{
+          rowClass: "cursor-pointer",
           rowClassRules:{
             'bg-green-600': (params) =>{return params.data.is_qualified === true}
           }
