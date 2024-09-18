@@ -36,11 +36,20 @@ class TeamController:
         # the lock will ensure that the limit of 6 teams for each group is not exceeded
         
         try:
-            # get all teams
+            # check if group limit is exceeded before continuing (6 teams per group)
+            group_team_dict = {} # group_number: count of teams
+            for team in request_teams:
+                group_team_dict[team.group_number] = group_team_dict.get(team.group_number, 0) + 1
             all_teams: List[Team] = await self.team_repository.get_teams_by_group()
-            if len(all_teams) + len(request_teams) > 12:
+            for team in all_teams:
+                group_team_dict[team.group_number] = group_team_dict.get(team.group_number, 0) + 1
+            group_exceeded = []
+            for group, count in group_team_dict.items():
+                if count > 6:
+                    group_exceeded.append(group)
+            if len(group_exceeded) > 0:
                 await self.team_lock.give()
-                raise HTTPException(status_code=400, detail="Transaction will exceed Team limit of 12")
+                raise HTTPException(status_code=400, detail="Group limit exceeded for groups: "+str(group_exceeded))
 
             # create teams 
             teams: List[Team] = [Team(
