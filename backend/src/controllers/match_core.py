@@ -1,6 +1,6 @@
 from src.repositories.match_core import MatchRepository
 from src.repositories.team import TeamRepository
-from src.schemas.match_results import CreateMatchResultsRequest, MatchResultDetailed, MatchResultSparse
+from src.schemas.match_results import CreateMatchResults, MatchResultDetailed, MatchResultSparse
 from src.models.match_results import MatchResults
 from src.models.team import Team
 from typing import List, Set, Dict
@@ -17,7 +17,7 @@ class MatchController:
         self.team_repository = team_repository
         self.match_result_lock = match_result_lock
 
-    async def create_results(self, request_match_results: List[CreateMatchResultsRequest], round_number: int) -> bool:
+    async def create_results(self, request_match_results: List[CreateMatchResults], round_number: int) -> bool:
         """
         Creates Match and MatchResults records in the database
         """
@@ -28,7 +28,7 @@ class MatchController:
         self_match_game_ids: List[int] = []
         for match_result in request_match_results:
             if (match_result.result[0].team_name == match_result.result[1].team_name):
-                self_match_game_ids.append(match_result.match_id)
+                self_match_game_ids.append((match_result.result[0].team_name, match_result.result[1].team_name))
             team_name_set.add(match_result.result[0].team_name)
             team_name_set.add(match_result.result[1].team_name)
             # check match up duplicates

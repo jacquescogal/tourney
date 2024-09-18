@@ -19,7 +19,7 @@ class MatchResultDetailed(BaseModel):
     goals_scored: int = Field(..., example=2, description="Number of goals scored by the team for the match")
     registration_day_of_year: int = Field(..., example=1609459200, description="Date when the team joined the tournament in Unix timestamp")
 
-class CreateMatchResultsRequest(BaseModel):
+class CreateMatchResults(BaseModel):
     # request body for creating a new match result
     result: List[MatchResultBase] = Field(..., example=[{"team_name": "Team A", "goals_scored": 2},{"team_name": "Team B", "goals_scored": 2}], description="List of team names and goals scored")
 
@@ -32,7 +32,7 @@ class CreateMatchResultsRequest(BaseModel):
         return v
 
 class BatchCreateMatchResultsRequest(BaseModel):
-    results: List[CreateMatchResultsRequest] = Field(..., example=[{"match_id":1,"result":[{"team_name": "Team A", "goals_scored": 2},{"team_name": "Team B", "goals_scored": 2}]}], description="list of match results to be created as a batch")
+    results: List[CreateMatchResults] = Field(..., example=[{"result":[{"team_name": "Team A", "goals_scored": 2},{"team_name": "Team B", "goals_scored": 2}]}], description="list of match results to be created as a batch")
     round_number: int = Field(..., example=1, description="Round number for the matches")
 
     @field_validator("results")
