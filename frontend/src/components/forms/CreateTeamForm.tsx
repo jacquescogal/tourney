@@ -9,18 +9,13 @@ import Button from "../commons/Button";
 import { Result } from "../../types/generic";
 import TeamService from "../../api/teamService";
 
-const CreateTeamForm = () => {
+const CreateTeamForm = (props:{consoleText:string, appendToConsole:(text: string) => void}) => {
   const [text, setText] = useState("");
   const [counter, setCounter] = useState<number>(0); // forces re-render
   const [showPopup, setShowPopup] = useState<boolean>(false);
-  const [consoleText, setConsoleText] = useState<string>("");
   const consoleRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
-
-  const appendToConsole = (text: string) => {
-    setConsoleText(consoleText + text + "\n---\n");
-  };
 
   const getCursorLineNumber = () => {
     const textarea = textareaRef.current;
@@ -81,13 +76,13 @@ const CreateTeamForm = () => {
       const response = await TeamService.createTeams(payload);
 
       if (response.ok) {
-        appendToConsole(
+        props.appendToConsole(
           "body:\n" + JSON.stringify(payload) + "\nServer Response:\nsuccess"
         );
         setText(""); // Reset the form
       } else {
         const jsonData = await response.json();
-        appendToConsole(
+        props.appendToConsole(
           "body:\n" +
             JSON.stringify(payload) +
             "\nServer Response:\nerror:" +
@@ -95,7 +90,7 @@ const CreateTeamForm = () => {
         );
       }
     } catch (error) {
-      appendToConsole(
+      props.appendToConsole(
         "body:\n" +
           JSON.stringify(payload) +
           "\nServer Response:\nerror:\n " +
@@ -207,7 +202,7 @@ const CreateTeamForm = () => {
     if (consoleRef.current) {
       consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
     }
-  }, [consoleText]);
+  }, [props.consoleText]);
 
   return (
     <div className="h-screen-less-all-headers w-article-wide flex justify-center flex-col items-center">
@@ -220,7 +215,7 @@ const CreateTeamForm = () => {
           ref={consoleRef}
           className="bg-black text-green-300 p-2 h-[200px] w-full overflow-y-scroll whitespace-pre-wrap break-words scroll-smooth"
         >
-          {consoleText}
+          {props.consoleText}
         </div>
         <h1 className="text-2xl self-start text-text-pop">Create Team</h1>
         {/* format */}

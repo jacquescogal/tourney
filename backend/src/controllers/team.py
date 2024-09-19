@@ -9,18 +9,19 @@ from src.schemas.team import TeamBase
 from src.controllers.connection_controller import ConnectionController
 import json
 from fastapi.responses import JSONResponse
+from src.repositories.match_core import MatchRepository
 class TeamController:
-    def __init__(self, team_repository: TeamRepository, team_lock: DistributedLock = None):
+    def __init__(self, team_repository: TeamRepository, match_repository: MatchRepository = None, team_lock: DistributedLock = None, match_lock: DistributedLock = None):
         # inject team_repository
         self.team_repository = team_repository
+        self.match_repository = match_repository
         self.team_lock = team_lock
+        self.match_lock = match_lock
     
     async def create_teams(self, request_teams: List[RegisterTeamRequest]) -> bool:
         """
         create_teams creates teams in batch. It processes the request_teams into ORM teams model and calls the repository to create teams in batch.
         """
-        
-
         team_names: List[str] =[team.team_name for team in request_teams]
 
         # check if there are duplicate teams in the request_teams list
@@ -88,6 +89,37 @@ class TeamController:
             registration_date_ddmm=day_of_year_to_ddmm(team.registration_day_of_year),
             group_number=team.group_number
         ) for team in teams]
+    
+    async def delete_team(self, team_id: int) -> bool:
+        """
+        delete_team deletes a team by team_id.
+        """
+        if not await self.team_lock.get() or not await self.match_lock.get():
+            await self.team_lock.give()
+            await self.match_lock.give()
+            raise HTTPException(status_code=500, detail="Failed to get team lock")
+        try:
+            if await self.match_repository.delete_match_results_associated_with_team(team_id) and await self.team_repository.delete_team(team_id) == True:
+                await self.match_repository.commit_transaction()
+                is_committed = await self.team_repository.commit_transaction()
+                await self.team_lock.give()
+                await self.match_lock.give()
+                connectionController = ConnectionController.get_instance()
+                teams:List[TeamBase] = await self.get_teams()
+                response = json.dumps(sorted([team.dict() for team in teams], key=lambda x: x["group_number"]))
+                await connectionController.broadcast(
+                    ("teams"),
+                    response
+                )
+                return is_committed
+            else:
+                await self.team_lock.give()
+                await self.team_lock.give()
+                raise HTTPException(status_code=404, detail="Team not found")
+        finally:
+            await self.match_lock.give()
+            await self.team_lock.give()
+    
     
     async def get_team_details_for_id(self, team_id: int) -> TeamDetails:
         match_ups = await self.team_repository.get_team_matchups_for_id(team_id)

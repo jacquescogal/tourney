@@ -8,8 +8,6 @@ import { useEffect, useState } from "react";
 import { IMatchRankingResponse, ITeamRanking, ITeamRankingRow } from "../../types/leaderboard";
 import { parse } from "date-fns";
 import MatchService from "../../api/MatchService";
-import { useNavigate } from "react-router-dom";
-import { GOTO_TEAM_DETAIL_PAGE } from "../../routes/team";
 import { WS_MATCHUP } from "../../api_routes/websocket";
 
 ModuleRegistry.registerModules([ClientSideRowModelModule]);
@@ -151,7 +149,7 @@ const Leaderboard = () => {
 };
 
 const BoardRanking = (props: { rowData:ITeamRankingRow[] }) => {
-  const nav = useNavigate();
+  // const nav = useNavigate();
 
   // Column Definitions: Defines & controls grid columns.
   const colDefs: ColDef<ITeamRankingRow>[] = [
@@ -187,9 +185,9 @@ const BoardRanking = (props: { rowData:ITeamRankingRow[] }) => {
           rowData={props.rowData}
           columnDefs={colDefs}
           defaultColDef={defaultColDef}
-          onRowClicked={(e) => {
-            nav(GOTO_TEAM_DETAIL_PAGE(e.data.team_id));
-          }}
+          // onRowClicked={(e) => {
+          //   nav(GOTO_TEAM_DETAIL_PAGE(e.data.team_id));
+          // }}
           gridOptions={{
             rowClass: "cursor-pointer",
             rowClassRules: {

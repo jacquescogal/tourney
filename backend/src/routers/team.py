@@ -5,12 +5,13 @@ from src.database.database import Database
 from src.repositories.team import TeamRepository
 from src.controllers.team import TeamController
 from src.schemas.team import BatchRegisterTeamRequest, TeamBase,TeamDetails
-from src.redis.lock import DistributedLock, TEAM_LOCK_KEY
+from src.redis.lock import DistributedLock, TEAM_LOCK_KEY, MATCH_LOCK_KEY
 from typing import List
 from fastapi import HTTPException, Request
 from src.schemas.user import UserRole
 from fastapi import WebSocket, WebSocketDisconnect
 from src.controllers.connection_controller import ConnectionController
+from src.repositories.match_core import MatchRepository
 team_router = APIRouter()
 database = Database.get_instance()
 
@@ -21,7 +22,7 @@ async def create_team(request:Request, batchRequest: BatchRegisterTeamRequest, d
     """
     if request.state.user_session is None or request.state.user_session.user_role != UserRole.admin:
         return HTTPException(status_code=401, detail="Unauthorized")
-    team_controller = TeamController(TeamRepository(db), DistributedLock(TEAM_LOCK_KEY))
+    team_controller = TeamController(TeamRepository(db), team_lock=DistributedLock(TEAM_LOCK_KEY))
     is_ok = await team_controller.create_teams(
         request_teams=batchRequest.teams
     )
@@ -50,6 +51,19 @@ async def get_team(team_id: int, db: AsyncSession = Depends(database.get_session
         return JSONResponse(content={"detail":"team not found"}, status_code=404)
     return JSONResponse(content=team.dict(), status_code=200)
 
+@team_router.delete("/teams/{team_id}", tags=["team"])
+async def delete_team(request: Request, team_id: int, db: AsyncSession = Depends(database.get_session)):
+    """
+    API endpoint to delete team by team ID.
+    """
+    if request.state.user_session is None or request.state.user_session.user_role != UserRole.admin:
+        return HTTPException(status_code=401, detail="Unauthorized")
+    team_controller = TeamController(TeamRepository(db), MatchRepository(db), DistributedLock(TEAM_LOCK_KEY), DistributedLock(MATCH_LOCK_KEY))
+    is_ok = await team_controller.delete_team(team_id)
+    if is_ok:
+        return JSONResponse(content={"detail":"team deleted successfully"}, status_code=200)
+    else:
+        return JSONResponse(content={"detail":"team deletion failed"}, status_code=500)
 
 @team_router.websocket("/ws/teams")
 async def websocket_endpoint(websocket: WebSocket):

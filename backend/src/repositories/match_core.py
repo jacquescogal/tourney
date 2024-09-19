@@ -111,6 +111,22 @@ class MatchRepository:
         except HTTPException as e:
             raise HTTPException(status_code=e.status_code, detail=e.detail)
         
+    async def delete_match_results_associated_with_team(self, team_id: int) -> bool:
+        try:
+            # fetch match_ids for team_id
+            query = select(MatchResults.match_id).where(MatchResults.team_id == team_id)
+            match_ids = [row[0] for row in (await self.db.execute(query)).fetchall()]
+            # delete game match associated with match_ids
+            query = delete(GameMatch).where(GameMatch.match_id.in_(match_ids))
+            await self.db.execute(query)
+            return True
+        except SQLAlchemyError as e:
+            await self.rollback_transaction()
+            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        except HTTPException as e:
+            await self.rollback_transaction()
+            raise HTTPException(status_code=e.status_code, detail=e.detail)
+        
     async def delete_all_match_results(self) -> bool:
         """
         Deletes all match results but need to commit transaction.
