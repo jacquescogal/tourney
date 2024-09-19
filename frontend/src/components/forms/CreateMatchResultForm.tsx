@@ -244,7 +244,7 @@ const CreateMatchResultForm = () => {
     }
   }, [consoleText]);
   return (
-    <div className="h-screen-less-header w-article-wide flex justify-center flex-col items-center">
+    <div className="h-screen-less-all-headers w-article-wide flex justify-center flex-col items-center">
     <form
       onSubmit={handleSubmit}
       className="bg-blue-100 flex justify-center flex-col w-full items-center p-4 rounded-lg"
@@ -286,6 +286,9 @@ const CreateMatchResultForm = () => {
               setCounter((counter) => counter + 1);
               setShowPopup(true);
             }}
+            onKeyUp={()=>{
+                setCounter((counter) => counter + 1);
+              }}
             onBlur={() => {
               setShowPopup(false);
             }}

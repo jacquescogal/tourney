@@ -9,7 +9,7 @@ from src.schemas.match_results import BatchCreateMatchResultsRequest
 from fastapi import HTTPException
 from src.redis.lock import DistributedLock, MATCH_LOCK_KEY
 from config import Settings
-
+from fastapi import Request
 match_router = APIRouter()
 database = Database.get_instance()
 
@@ -33,11 +33,10 @@ async def create_match_results(request: BatchCreateMatchResultsRequest, db: Asyn
         return JSONResponse(content={"detail":"matches and results creation failed"}, status_code=500)
 
 @match_router.get("/match_rankings", tags=["match"])
-async def get_match_rankings(round: int = None, group:int = None, db: AsyncSession = Depends(database.get_session)):
+async def get_match_rankings(request: Request, round: int = None, group:int = None, db: AsyncSession = Depends(database.get_session)):
     """
     API endpoint to get all match results.
     """
-    print(round, group)
     if round is None:
         return HTTPException(status_code=400, detail="Round number is required")
     elif round < 1 or round > 3:

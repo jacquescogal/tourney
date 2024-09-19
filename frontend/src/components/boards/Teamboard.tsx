@@ -15,7 +15,7 @@ ModuleRegistry.registerModules([ClientSideRowModelModule]);
 
 const Teamboard = () => {
   return (
-    <div className="h-screen-less-header w-article-wide p-4">
+    <div className="h-screen-less-all-headers w-article-wide p-4">
       <div className="h-full w-full flex flex-col relative">
         <BoardTeams />
       </div>

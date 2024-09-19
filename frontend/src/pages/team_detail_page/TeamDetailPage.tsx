@@ -54,7 +54,7 @@ const TeamDetailPage = () => {
   }
 
   return (
-    <div className="h-screen-less-header relative">
+    <div className="h-screen-less-all-headers relative">
       <h1>Team Details for {teamDetails.team_name}</h1>
       <p>Registration Date: {teamDetails.registration_date_ddmm}</p>
       <p>Group Number: {teamDetails.group_number}</p>

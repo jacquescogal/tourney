@@ -8,7 +8,15 @@ class MatchService {
         group: String(params.groupNumber),
       }
       const queryString = new URLSearchParams(strParams).toString();
-      const response = await fetch(`${GET_MATCH_RANKINGS()}?${queryString}`);
+      const response = await fetch(`${GET_MATCH_RANKINGS()}?${queryString}`
+    , {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include"
+      }
+    );
       return response
       };
 
@@ -19,6 +27,7 @@ class MatchService {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(payload),
+          credentials: "include"
         });
         return response
         };

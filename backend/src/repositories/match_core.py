@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import delete
 from src.models.game_match import GameMatch
 from src.models.match_results import MatchResults
 from src.models.team import Team
@@ -108,6 +109,26 @@ class MatchRepository:
         except SQLAlchemyError as e:
             raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
         except HTTPException as e:
+            raise HTTPException(status_code=e.status_code, detail=e.detail)
+        
+    async def delete_all_match_results(self) -> bool:
+        """
+        Deletes all match results but need to commit transaction.
+
+        Returns:
+        is_successful: bool
+        """
+        try:
+            query = delete(GameMatch)
+            await self.db.execute(query)
+            query = delete(MatchResults)
+            await self.db.execute(query)
+            return True
+        except SQLAlchemyError as e:
+            await self.rollback_transaction()
+            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        except HTTPException as e:
+            await self.rollback_transaction()
             raise HTTPException(status_code=e.status_code, detail=e.detail)
 
     async def rollback_transaction(self) -> bool:

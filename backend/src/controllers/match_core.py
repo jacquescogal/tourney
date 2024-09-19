@@ -151,8 +151,10 @@ class MatchController:
                 team_b_detail = result
                 group_mapper.setdefault(team_a_detail.team_id, team_a_detail.group_number)
                 group_mapper.setdefault(team_b_detail.team_id, team_b_detail.group_number)
-                team_rank_mapper.setdefault(team_a_detail.team_id, TeamRank(team_id=team_a_detail.team_id, position=1, is_tied=False, team_name=team_a_detail.team_name, goals=team_a_detail.goals_scored,wins=0, draws=0, losses=0,registration_day_of_year=team_a_detail.registration_day_of_year, registration_date_ddmm=day_of_year_to_ddmm(team_a_detail.registration_day_of_year)))
-                team_rank_mapper.setdefault(team_b_detail.team_id, TeamRank(team_id=team_b_detail.team_id, position=1, is_tied=False, team_name=team_b_detail.team_name, goals=team_b_detail.goals_scored,wins=0, draws=0, losses=0,registration_day_of_year=team_b_detail.registration_day_of_year, registration_date_ddmm=day_of_year_to_ddmm(team_b_detail.registration_day_of_year)))
+                team_rank_mapper.setdefault(team_a_detail.team_id, TeamRank(team_id=team_a_detail.team_id, position=1, is_tied=False, team_name=team_a_detail.team_name, goals=0,wins=0, draws=0, losses=0,registration_day_of_year=team_a_detail.registration_day_of_year, registration_date_ddmm=day_of_year_to_ddmm(team_a_detail.registration_day_of_year)))
+                team_rank_mapper.setdefault(team_b_detail.team_id, TeamRank(team_id=team_b_detail.team_id, position=1, is_tied=False, team_name=team_b_detail.team_name, goals=0,wins=0, draws=0, losses=0,registration_day_of_year=team_b_detail.registration_day_of_year, registration_date_ddmm=day_of_year_to_ddmm(team_b_detail.registration_day_of_year)))
+                team_rank_mapper[team_a_detail.team_id].goals += team_a_detail.goals_scored
+                team_rank_mapper[team_b_detail.team_id].goals += team_b_detail.goals_scored
                 if team_a_detail.goals_scored > team_b_detail.goals_scored:
                     team_rank_mapper[team_a_detail.team_id].wins += 1
                     team_rank_mapper[team_b_detail.team_id].losses += 1

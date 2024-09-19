@@ -12,7 +12,8 @@ export default {
         'gt-blue':'#275b85',
         'text-pop':'#344054',
         'text-norm':'#656d7c',
-        'test-green':'#00A300'
+        'test-green':'#00A300',
+        'error':'red-500'
       },
       spacing: {
 
@@ -21,7 +22,8 @@ export default {
         'header-3/4': '60px',
         'header-1/2': '40px',
         'header-1/4': '20px',
-        'screen-less-header': 'calc(100vh - 80px - 40px)',
+        'screen-less-all-headers': 'calc(100vh - 80px - 40px)',
+        'screen-less-header': 'calc(100vh - 80px)',
         'article-wide': '700px',
         'article-wide-1/4': '175px',
         'article-wide-1/2': '350px',

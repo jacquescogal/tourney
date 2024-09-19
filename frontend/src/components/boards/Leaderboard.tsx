@@ -15,7 +15,7 @@ ModuleRegistry.registerModules([ClientSideRowModelModule]);
 
 const Leaderboard = () => {
   return (
-    <div className="h-screen-less-header w-article-wide p-4">
+    <div className="h-screen-less-all-headers w-article-wide p-4">
       <div className="h-full w-full flex flex-col">
         <BoardRanking roundNumber={1} groupNumber={1} />
         <BoardRanking roundNumber={1} groupNumber={2} />

@@ -5,8 +5,11 @@ import time
 from config import Settings
 
 # Constant lock keys
-TEAM_LOCK_KEY = "team_lock"
-MATCH_LOCK_KEY = "match_lock"
+LOCK_PREFIX = "lock:"
+
+TEAM_LOCK_KEY = LOCK_PREFIX + "team_lock"
+MATCH_LOCK_KEY = LOCK_PREFIX + "match_lock"
+USER_LOCK_KEY = LOCK_PREFIX + "user_lock"
 
 
 class DistributedLock:
