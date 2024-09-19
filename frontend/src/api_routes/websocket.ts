@@ -1,0 +1,2 @@
+export const WS_MATCHUP = (params:{roundNumber:number, groupNumber:number}): string => `${import.meta.env.VITE_WS_HOST}/ws/match_rankings/${params.roundNumber}/${params.groupNumber}`;
+export const WS_TEAMS = (): string => `${import.meta.env.VITE_WS_HOST}/ws/teams`;

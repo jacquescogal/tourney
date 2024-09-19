@@ -10,6 +10,7 @@ from src.schemas.rank import TeamRank, GroupRanking, GetRankingResponse
 from src.utils.date_util import day_of_year_to_ddmm
 import json
 from src.redis.lock import DistributedLock
+from src.controllers.connection_controller import ConnectionController
 class MatchController:
     def __init__(self, match_repository: MatchRepository, team_repository: TeamRepository, match_result_lock: DistributedLock):
         # inject repositories
@@ -68,7 +69,7 @@ class MatchController:
             for match_result in request_match_results:
                 if team_name_to_group_map[match_result.result[0].team_name] != team_name_to_group_map[match_result.result[1].team_name]:
                     raise HTTPException(status_code=400, detail="Cross group matches are not allowed in round 1 and 2")
-
+        print("before lock")
         # get lock here
         # existing matches will be consistent
         # we also check if matches have already been played between two teams for a round
@@ -109,6 +110,15 @@ class MatchController:
                         await self.match_repository.commit_transaction()
                         await self.match_repository.commit_transaction()
                         await self.match_result_lock.give()
+                        connectionController = ConnectionController.get_instance()
+                        await connectionController.broadcast(
+                            ("match_rankings",round_number,1),
+                            json.dumps((await self.get_match_rankings(qualifying_count=4, round_number=round_number, group_number_filter=1)).dict()),
+                        )
+                        await connectionController.broadcast(
+                            ("match_rankings",round_number,2),
+                            json.dumps((await self.get_match_rankings(qualifying_count=4, round_number=round_number, group_number_filter=2)).dict()),
+                        )
                         return True
                     else:
                         await self.match_result_lock.give()

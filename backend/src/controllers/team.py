@@ -6,8 +6,9 @@ from fastapi import HTTPException
 from src.utils.date_util import ddmm_to_day_of_year, day_of_year_to_ddmm
 from src.redis.lock import DistributedLock
 from src.schemas.team import TeamBase
-
-
+from src.controllers.connection_controller import ConnectionController
+import json
+from fastapi.responses import JSONResponse
 class TeamController:
     def __init__(self, team_repository: TeamRepository, team_lock: DistributedLock = None):
         # inject team_repository
@@ -61,6 +62,13 @@ class TeamController:
             if await self.team_repository.create_teams(teams) == True:
                 is_committed = await self.team_repository.commit_transaction()
                 await self.team_lock.give()
+                connectionController = ConnectionController.get_instance()
+                teams:List[TeamBase] = await self.get_teams()
+                response = json.dumps(sorted([team.dict() for team in teams], key=lambda x: x["group_number"]))
+                await connectionController.broadcast(
+                    ("teams"),
+                    response
+                )
                 return is_committed
             else:
                 await self.team_lock.give()

@@ -1,4 +1,4 @@
-import { GET_MATCH_RANKINGS } from '../api_routes/match-core';
+import { CREATE_GAME_MATCHES, GET_MATCH_RANKINGS } from '../api_routes/match-core';
 import { BatchCreateMatchResultsRequest } from '../types/match';
 
 class MatchService {
@@ -21,7 +21,7 @@ class MatchService {
       };
 
       public static createMatchResults = async (payload:BatchCreateMatchResultsRequest): Promise<Response> => {
-        const response = await fetch("http://localhost:8000/match_results/", {
+        const response = await fetch(`${CREATE_GAME_MATCHES()}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

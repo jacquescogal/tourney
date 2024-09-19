@@ -23,6 +23,7 @@ class TeamService {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
+      credentials: "include",
     });
     return response;
   };

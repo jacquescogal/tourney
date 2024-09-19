@@ -10,6 +10,7 @@ import { ITeam } from "../../types/team";
 import TeamService from "../../api/teamService";
 import { GOTO_TEAM_DETAIL_PAGE } from "../../routes/team";
 import { useNavigate } from "react-router-dom";
+import { WS_TEAMS } from "../../api_routes/websocket";
 
 ModuleRegistry.registerModules([ClientSideRowModelModule]);
 
@@ -67,6 +68,36 @@ const BoardTeams = () => {
 
     fetchTeams();
   }, []);
+
+  useEffect(() => {
+    const connectWebSocket = () => {
+      const socket = new WebSocket(WS_TEAMS());
+      socket.onopen = () => {
+        console.log('WebSocket connection opened');
+      }
+  
+      socket.onmessage = (event) => {
+        const data:  ITeam[] = JSON.parse(event.data);  
+        console.log('Received data:', data);
+        setRowData(data);
+      };
+  
+  
+      socket.onclose = () => {
+        console.log('WebSocket connection closed');
+        setTimeout(connectWebSocket, 5000);
+      };
+  
+      socket.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+      return () => {
+        console.log('Closing WebSocket connection');
+        socket.close();
+      };
+    }
+    connectWebSocket();
+  }, []); 
 
   return (<>
       <h1 className="h-[25px]">Teams</h1>

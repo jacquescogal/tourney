@@ -68,3 +68,8 @@ class UserSessionStoreValue(BaseModel):
         if self.user_role in {UserRole.player, UserRole.manager} and self.team_id is None:
             raise ValueError('Team ID cannot be null for player or manager')
         return self
+    
+
+class SessionTokenAndUserSession(BaseModel):
+    session_token: str = Field(..., example='session_token', description='Session token')
+    user_session: UserSessionStoreValue = Field(..., description='User session')

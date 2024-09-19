@@ -3,12 +3,13 @@ import Button from "../../components/commons/Button";
 import { UserLoginRequest, UserLoginRequestSchema } from "../../types/user";
 import SessionService from "../../api/SessionService";
 import { useNavigate } from "react-router-dom";
+import { IUserSession } from "../../types/session";
 
-const LoginPage = () => {
+const LoginPage = (props:{setUserSession:React.Dispatch<React.SetStateAction<IUserSession | null>>}) => {
   return (
     <div className="bg-gt-blue h-screen-less-header flex flex-row items-center justify-evenly">
       <TextField />
-      <LoginForm />
+      <LoginForm {...props}/>
     </div>
   );
 };
@@ -38,7 +39,7 @@ const TextField = () => {
   );
 };
 
-const LoginForm = () => {
+const LoginForm = (props:{setUserSession:React.Dispatch<React.SetStateAction<IUserSession | null>>}) => {
     const nav = useNavigate();
     const [username, setUsername] = React.useState('');
     const [password, setPassword] = React.useState('');
@@ -69,6 +70,8 @@ const LoginForm = () => {
             const response = await SessionService.createSession(userLoginRequest);
             if(response.status === 200){
                 const data = await response.json();
+                props.setUserSession(data);
+                sessionStorage.setItem('session', JSON.stringify(data));
                 nav('/admin/team');
             }
             else{
@@ -76,7 +79,8 @@ const LoginForm = () => {
                 setError(data.detail);
             }
         }
-        catch{
+        catch (e){
+            console.error(e);
             setError('Invalid username or password');
         }
     }

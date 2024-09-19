@@ -3,11 +3,15 @@ import { Outlet, useNavigate } from "react-router-dom";
 import SubHeader from "../../components/commons/SubHeader";
 import { useEffect } from "react";
 
-const HomePage = () => {
+const AdminPanel = () => {
   const nav = useNavigate();
   useEffect(() => {
-    // redirect to team page
-    nav("/admin/team");
+    const userSession = sessionStorage.getItem("session");
+    if (!userSession) {
+      nav("/login");
+    }else{
+      nav("/admin/team");
+    }
   }, []);
   return (
     <div className="bg-gt-white w-screen flex flex-col justify-center ">
@@ -19,4 +23,4 @@ const HomePage = () => {
   );
 };
 
-export default HomePage;
+export default AdminPanel;

@@ -1,20 +1,10 @@
-from src.repositories.match_core import MatchRepository
-from src.repositories.team import TeamRepository
 from src.repositories.user import UserRepository
-from src.schemas.match_results import CreateMatchResults, MatchResultDetailed, MatchResultSparse
-from src.models.match_results import MatchResults
-from src.models.team import Team
-from typing import List, Set, Dict
 from fastapi import HTTPException
-from src.models.game_match import GameMatch
-from src.schemas.rank import TeamRank, GroupRanking, GetRankingResponse
-from src.utils.date_util import day_of_year_to_ddmm
-import json
 from src.models.user import User
 from src.redis.lock import DistributedLock
 from src.redis.session import SessionStorage
 from src.utils.crypto import encrypt_password, check_password
-from src.schemas.user import UserSessionStoreValue, UserRole
+from src.schemas.user import UserSessionStoreValue, UserRole, SessionTokenAndUserSession
 class AuthController:
     def __init__(self, user_repository: UserRepository, session_store: SessionStorage, user_lock: DistributedLock = None):
         # inject repositories
@@ -26,7 +16,7 @@ class AuthController:
         # lock to prevent inconsistency with async writes
         self.user_lock = user_lock
 
-    async def create_session(self, username: str, password: str, ttl: int = 60 * 60 * 24) -> str:
+    async def create_session(self, username: str, password: str, ttl: int = 60 * 60 * 24) -> SessionTokenAndUserSession:
         """
         create_session authenticates the user and returns a session token if successful.
         """
@@ -37,7 +27,10 @@ class AuthController:
             raise HTTPException(status_code=400, detail="Wrong username or password")
         user_session_store_value: UserSessionStoreValue = UserSessionStoreValue(user_id=user.user_id, user_role=user.user_role, team_id=user.team_id)
         session_token = await self.session_store.create_session(user_session_store_value)
-        return session_token
+        return SessionTokenAndUserSession(
+            session_token=session_token,
+            user_session=user_session_store_value
+        )
     
     async def create_user(self, username: str, password: str, role: UserRole, team_id: int = None) -> bool:
         """

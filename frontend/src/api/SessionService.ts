@@ -1,4 +1,4 @@
-import { CREATE_SESSION } from "../api_routes/session";
+import { CREATE_SESSION, GET_SESSION } from "../api_routes/session";
 import { UserLoginRequest } from "../types/user";
 
 class SessionService {
@@ -15,5 +15,28 @@ class SessionService {
     });
     return response;
   };
+
+  public static getSession = async (
+  ): Promise<Response> => {
+    const response = await fetch(GET_SESSION(), {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include"
+      });
+    return response;
+  };
+
+  public static endSession = async (): Promise<Response> => {
+    const response = await fetch(GET_SESSION(), {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include"
+    });
+    return response;
+  }
 }
 export default SessionService;
