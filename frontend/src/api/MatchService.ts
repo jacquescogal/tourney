@@ -3,7 +3,7 @@ import {
   GET_MATCH_RANKINGS,
   GET_MATCH_RESULTS,
 } from "../api_routes/match-core";
-import { BatchCreateMatchResultsRequest } from "../types/match";
+import { BatchCreateMatchResultsRequest, DeleteMatchResultRequest, UpdateMatchResultRequest } from "../types/match";
 
 class MatchService {
   public static getMatchRankings = async (params: {
@@ -55,6 +55,33 @@ class MatchService {
     });
     return response;
   };
+
+  public static updateMatchResults = async (
+    payload: UpdateMatchResultRequest): Promise<Response> => {
+    const response = await fetch(`${CREATE_GAME_MATCHES()}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      credentials: "include",
+    });
+    return response;
+  }
+
+  public static deleteMatchResults = async (
+    payload: DeleteMatchResultRequest): Promise<Response> => {
+    const response = await fetch(`${CREATE_GAME_MATCHES()}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      credentials: "include",
+    });
+    return response;
+  }
+
 }
 
 export default MatchService;

@@ -59,10 +59,6 @@ async def update_team(request: Request, team_id: int, team: TeamUpdateRequest, d
     if request.state.user_session is None or request.state.user_session.user_role != UserRole.admin:
         return HTTPException(status_code=401, detail="Unauthorized")
     team_controller = TeamController(TeamRepository(db), team_lock=DistributedLock(TEAM_LOCK_KEY))
-    print("team_id", team_id)
-    print("team", team)
-    print("team.team_name", team.team_name)
-    print("team.registration_date_ddmm", team.registration_date_ddmm)
     is_ok = await team_controller.update_team_details_for_id(team_id, team.team_name, registration_date_ddmm=team.registration_date_ddmm)
     if is_ok:
         return JSONResponse(content={"detail":"team updated successfully"}, status_code=200)

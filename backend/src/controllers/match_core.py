@@ -1,6 +1,6 @@
 from src.repositories.match_core import MatchRepository
 from src.repositories.team import TeamRepository
-from src.schemas.match_results import CreateMatchResults, MatchResultDetailed, MatchResultSparse, MatchResultsConcat,MatchResultsConcatStrict
+from src.schemas.match_results import CreateMatchResults, MatchResultDetailed, MatchResultSparse, MatchResultsConcat,MatchResultsConcatStrict,GetMatchResultsResponse
 from src.models.match_results import MatchResults
 from src.models.team import Team
 from typing import List, Set, Dict
@@ -121,7 +121,8 @@ class MatchController:
                         )
                         await connectionController.broadcast(
                             ("match_results",round_number),
-                            json.dumps((await self.get_concat_match_results(round_number)).dict())
+                            
+                            json.dumps(GetMatchResultsResponse(match_results=(await self.get_concat_match_results(round_number))).dict())
                         )
                         return True
                     else:
@@ -244,6 +245,72 @@ class MatchController:
             team_2_goals=match_results_concat[match_id].team_2_goals
         ) for match_id in match_results_concat.keys()]
         return match_result_concat_list
+    
+    async def update_match_results_for_match_id(self, round_number: int, match_id: int, team_id: int, team_goals:int) -> bool:
+        if not await self.match_result_lock.get():
+            raise HTTPException(status_code=500, detail="Failed to get match result lock")
+        try:
+            result = await self.match_repository.update_match_results_for_match_id(match_id, team_id,team_goals)
+            if result:
+                await self.match_repository.commit_transaction()
+                await self.match_result_lock.give()
+                connectionController = ConnectionController.get_instance()
+                await connectionController.broadcast(
+                    ("match_rankings",round_number,1),
+                    json.dumps((await self.get_match_rankings(qualifying_count=4, round_number=round_number, group_number_filter=1)).dict()),
+                )
+                await connectionController.broadcast(
+                    ("match_rankings",round_number,2),
+                    json.dumps((await self.get_match_rankings(qualifying_count=4, round_number=round_number, group_number_filter=2)).dict()),
+                )
+                await connectionController.broadcast(
+                    ("match_results",round_number),
+                    json.dumps(GetMatchResultsResponse(match_results=(await self.get_concat_match_results(round_number))).dict())
+                )
+                return True
+            else:
+                await self.match_result_lock.give()
+                await self.match_repository.rollback_transaction()
+                return False
+        except HTTPException as e:
+            await self.match_repository.rollback_transaction()
+            raise HTTPException(status_code=e.status_code, detail=e.detail)
+        except Exception as e:
+            await self.match_repository.rollback_transaction()
+            raise HTTPException(status_code=500, detail=str(e))
+        
+    async def delete_match(self, round_number:int, match_id:int) -> bool:
+        if not await self.match_result_lock.get():
+            raise HTTPException(status_code=500, detail="Failed to get match result lock")
+        try:
+            result = await self.match_repository.delete_match(match_id)
+            if result:
+                await self.match_repository.commit_transaction()
+                await self.match_result_lock.give()
+                connectionController = ConnectionController.get_instance()
+                await connectionController.broadcast(
+                    ("match_rankings",round_number,1),
+                    json.dumps((await self.get_match_rankings(qualifying_count=4, round_number=round_number, group_number_filter=1)).dict()),
+                )
+                await connectionController.broadcast(
+                    ("match_rankings",round_number,2),
+                    json.dumps((await self.get_match_rankings(qualifying_count=4, round_number=round_number, group_number_filter=2)).dict()),
+                )
+                await connectionController.broadcast(
+                    ("match_results",round_number),
+                    json.dumps(GetMatchResultsResponse(match_results=(await self.get_concat_match_results(round_number))).dict())
+                )
+                return True
+            else:
+                await self.match_result_lock.give()
+                await self.match_repository.rollback_transaction()
+                return False
+        except HTTPException as e:
+            await self.match_repository.rollback_transaction()
+            raise HTTPException(status_code=e.status_code, detail=e.detail)
+        except Exception as e:
+            await self.match_repository.rollback_transaction()
+            raise HTTPException(status_code=500, detail=str(e))
     
     def _get_score(self, team: TeamRank) -> int:
         return team.wins * 3 + team.draws

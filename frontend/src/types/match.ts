@@ -19,3 +19,37 @@ export const BatchCreateMatchResultsRequestSchema = z.object({
 })
 
 export type BatchCreateMatchResultsRequest = z.infer<typeof BatchCreateMatchResultsRequestSchema>;
+
+
+export const UpdateMatchResultRequestSchema = z.object({
+    round_number: z
+      .number()
+      .min(1, "Round number should be between 1 and 3")
+      .max(3, "Round number should be between 1 and 3")
+      .describe("Round number for the matches"),
+    match_id: z
+      .number()
+      .describe("Unique identifier for the match"),
+    team_id: z
+      .number()
+      .describe("Unique identifier for the first team"),
+    team_goals: z
+      .number()
+      .nonnegative("Goals scored should be non-negative")
+      .describe("Number of goals scored by the first team")
+  });
+  
+  export type UpdateMatchResultRequest = z.infer<typeof UpdateMatchResultRequestSchema>;
+
+  export const DeleteMatchResultRequestSchema = z.object({
+    round_number: z
+      .number()
+      .min(1, "Round number should be between 1 and 3")
+      .max(3, "Round number should be between 1 and 3")
+      .describe("Round number for the matches"),
+    match_id: z
+      .number()
+      .describe("Unique identifier for the match"),
+  });
+  
+  export type DeleteMatchResultRequest = z.infer<typeof DeleteMatchResultRequestSchema>;

@@ -6,16 +6,18 @@ import "@ag-grid-community/styles/ag-theme-quartz.css";
 import {
   ITeamMatchResultRow,
   ITeamMatchResultRowHolder,
+  UpdateTeamRequestSchema,
 } from "../../types/team";
 // import { useNavigate } from "react-router-dom";
 import React, { useEffect, useState } from "react";
 import MatchService from "../../api/MatchService";
 import axios from "axios";
 import { WS_MATCHRESULTS, WS_MATCHUP } from "../../api_routes/websocket";
+import { DeleteMatchResultRequest, DeleteMatchResultRequestSchema, UpdateMatchResultRequest, UpdateMatchResultRequestSchema } from "../../types/match";
 
 ModuleRegistry.registerModules([ClientSideRowModelModule]);
 
-const MatchupResultBoard = (props:{leaderBoardToggle?:React.ReactNode}) => {
+const MatchupResultBoard = (props:{leaderBoardToggle?:React.ReactNode, appendToConsole: (text: string) => void}) => {
   return (
     <div className="h-screen-less-all-headers w-article-wide p-4">
       <div className="h-full w-full flex flex-col relative">
@@ -23,24 +25,42 @@ const MatchupResultBoard = (props:{leaderBoardToggle?:React.ReactNode}) => {
       <h1 className="h-[30px] underline text-2xl">Match History</h1>
       {props.leaderBoardToggle}
       </div>
-        <BoardTeams />
+        <BoardTeams appendToConsole={props.appendToConsole}/>
       </div>
     </div>
   );
 };
 
-const BoardTeams = () => {
+const BoardTeams = (prop: { appendToConsole: (text: string) => void}) => {
   //   const nav = useNavigate();
   const [rowData, setRowData] = useState<ITeamMatchResultRow[]>([]);
+  const deleteMatchResults = async (o: DeleteMatchResultRequest) => {
+    try {
+      const response = await MatchService.deleteMatchResults(
+        o
+      );
+      if (response.ok) {
+        prop.appendToConsole(
+          `Delete Match Result:\n${o.match_id}\nServer Response:\nsuccess`
+        );
+      }
+    } catch (error) {
+      prop.appendToConsole(
+        `Delete Match Result:\n${o.match_id}\nServer Response:\n${error}`
+      );
+    }
+  };
 
-  const DeleteButton = (props: { value: number }) => {
+  const DeleteButton = (props: { value: DeleteMatchResultRequest }) => {
     return (
       <div className="h-full w-full flex items-center justify-around content-center">
         <div
           className="h-3/4 w-3/4 bg-red-500 rounded text-center items-center justify-center mx-2 flex cursor-pointer"
           onClick={() => {
-            console.log(props.value);
-            //   deleteTeam(props.value);
+            if (props.value === null) {
+              return;
+            }
+            deleteMatchResults(props.value);
           }}
         >
           Del
@@ -60,6 +80,7 @@ const BoardTeams = () => {
       cellClass: () => {
         return `bg-slate-700 outline outline-blue-200 text-orange-300`;
       },
+      
 },
     {
       headerName: "Match Up",
@@ -75,7 +96,21 @@ const BoardTeams = () => {
       headerName: "Options",
       cellRenderer: DeleteButton,
       valueGetter: (params) => {
-        return params.data?.match_id;
+        if (!params.data) {
+          return null;
+        }
+        if (params.data.match_id === undefined) {
+          return null;
+        }
+        const deleteMatchResult: DeleteMatchResultRequest = {
+          round_number: 1,
+          match_id: params.data.match_id,
+        }
+        const isValid = DeleteMatchResultRequestSchema.safeParse(deleteMatchResult);
+        if (!isValid.success) {
+          return null;
+        }
+        return deleteMatchResult;
       },
     },
   ];
@@ -115,6 +150,7 @@ const BoardTeams = () => {
 
     socket.onmessage = (event) => {
       const data: ITeamMatchResultRowHolder = JSON.parse(event.data);  
+      console.log(event.data.group_rankings)
       setRowData(data.match_results);
     };
 
@@ -149,6 +185,67 @@ const BoardTeams = () => {
         // onRowClicked={(e) => {
         //   nav(GOTO_TEAM_DETAIL_PAGE(e.data.opponent_team_id));
         // }}
+        onCellEditingStopped={(e) => {
+          if (e.column.getColId() === "team_1_goals") {
+            const isValid =
+              UpdateMatchResultRequestSchema.shape.team_goals.safeParse(
+                e.newValue
+              );
+            if (isValid.success) {
+              // update the value
+              const updateDate = async () => {
+                try {
+                  const updateMatchResultsRequest: UpdateMatchResultRequest ={
+                    round_number: 1,
+                    match_id: e.node.data.match_id,
+                    team_id: e.node.data.team_1_id,
+                    team_goals: e.newValue
+                  }
+                  const isValid = UpdateMatchResultRequestSchema.safeParse(updateMatchResultsRequest);
+                  if(!isValid.success){
+                    return;
+                  }
+                  MatchService.updateMatchResults(updateMatchResultsRequest);
+                } catch (error) {
+                  console.log(error);
+                }
+              };
+              updateDate();
+            } else {
+              // undo the change
+              e.node.setDataValue(e.column.getColId(), e.oldValue);
+            }
+          } else if (e.column.getColId() === "team_2_goals") {
+            const isValid =
+              UpdateMatchResultRequestSchema.shape.team_goals.safeParse(
+                e.newValue
+              );
+            if (isValid.success) {
+              // update the value
+              const updateDate = async () => {
+                try {
+                  const updateMatchResultsRequest: UpdateMatchResultRequest ={
+                    round_number: 1,
+                    match_id: e.node.data.match_id,
+                    team_id: e.node.data.team_2_id,
+                    team_goals: e.newValue
+                  }
+                  const isValid = UpdateMatchResultRequestSchema.safeParse(updateMatchResultsRequest);
+                  if(!isValid.success){
+                    return;
+                  }
+                  MatchService.updateMatchResults(updateMatchResultsRequest);
+                } catch (error) {
+                  console.log(error);
+                }
+              };
+              updateDate();
+            } else {
+              // undo the change
+              e.node.setDataValue(e.column.getColId(), e.oldValue);
+            }
+          }
+        }}
         gridOptions={
           {
               rowClassRules: {

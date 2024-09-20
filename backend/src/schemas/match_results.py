@@ -80,3 +80,40 @@ class MatchResultsConcatStrict(MatchResultsConcat):
     
 class GetMatchResultsResponse(BaseModel):
     match_results: List[MatchResultsConcatStrict] = Field(..., example=[{"match_id": 1, "round_number": 1, "team_1_id": 1, "team_1_name": "Team A", "team_1_goals": 2, "team_2_id": 2, "team_2_name": "Team B", "team_2_goals": 2}], description="List of match results")
+
+
+class UpdateMatchResultRequest(BaseModel):
+    round_number: int = Field(..., example=1, description="Round number for the matches")
+    match_id: int = Field(..., example=1, description="Unique identifier for the match")
+    team_id: int = Field(..., example=1, description="Unique identifier for the first team")
+    team_goals: int = Field(..., example=2, description="Number of goals scored by the first team")
+
+    @field_validator("round_number")
+    def validate_round_number(cls, v):
+        # validates:
+        # round number should be between 1 and 3(final round) inclusive
+        if v < 1 or v > 3:
+            raise ValueError("Round number should be between 1 and 3")
+        return v
+    
+    @field_validator("team_goals")
+    def validate_team_goals(cls, v):
+        # validates:
+        # goals scored by both teams should be non-negative
+        if v < 0:
+            raise ValueError("Goals scored should be non-negative")
+        return v
+    
+    
+
+class DeleteMatchResultRequest(BaseModel):
+    round_number: int = Field(..., example=1, description="Round number for the matches")
+    match_id: int = Field(..., example=1, description="Unique identifier for the match")
+
+    @field_validator("round_number")
+    def validate_round_number(cls, v):
+        # validates:
+        # round number should be between 1 and 3(final round) inclusive
+        if v < 1 or v > 3:
+            raise ValueError("Round number should be between 1 and 3")
+        return v

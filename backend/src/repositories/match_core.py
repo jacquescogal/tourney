@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import delete
+from sqlalchemy import delete, update
 from src.models.game_match import GameMatch
 from src.models.match_results import MatchResults
 from src.models.team import Team
@@ -109,6 +109,30 @@ class MatchRepository:
         except SQLAlchemyError as e:
             raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
         except HTTPException as e:
+            raise HTTPException(status_code=e.status_code, detail=e.detail)
+
+    async def update_match_results_for_match_id(self, match_id: int, team_id: int, team_goals:int) -> bool:
+        try:
+            query = update(MatchResults).where(MatchResults.match_id == match_id).where(MatchResults.team_id == team_id).values(goals_scored=team_goals)
+            await self.db.execute(query)
+            return True
+        except SQLAlchemyError as e:
+            await self.rollback_transaction()
+            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        except HTTPException as e:
+            await self.rollback_transaction()
+            raise HTTPException(status_code=e.status_code, detail=e.detail)
+        
+    async def delete_match(self, match_id:int) -> bool:
+        try:
+            query = delete(GameMatch).where(GameMatch.match_id.in_([match_id])) # cascades
+            await self.db.execute(query)
+            return True
+        except SQLAlchemyError as e:
+            await self.rollback_transaction()
+            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        except HTTPException as e:
+            await self.rollback_transaction()
             raise HTTPException(status_code=e.status_code, detail=e.detail)
         
     async def delete_match_results_associated_with_team(self, team_id: int) -> bool:

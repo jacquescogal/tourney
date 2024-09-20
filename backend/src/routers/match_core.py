@@ -5,7 +5,7 @@ from src.database.database import Database
 from src.controllers.match_core import MatchController
 from src.repositories.match_core import MatchRepository
 from src.repositories.team import TeamRepository
-from src.schemas.match_results import BatchCreateMatchResultsRequest, MatchResultsConcatStrict, GetMatchResultsResponse
+from src.schemas.match_results import BatchCreateMatchResultsRequest, MatchResultsConcatStrict, GetMatchResultsResponse, UpdateMatchResultRequest, DeleteMatchResultRequest
 from fastapi import HTTPException
 from src.redis.lock import DistributedLock, MATCH_LOCK_KEY
 from config import Settings
@@ -66,6 +66,46 @@ async def get_match_results(request: Request, round_number: int, db: AsyncSessio
     )
     match_results: List[MatchResultsConcatStrict] = await match_results_controller.get_concat_match_results(round_number=round_number)
     return JSONResponse(content=GetMatchResultsResponse(match_results=match_results).dict(), status_code=200)
+
+@match_router.put("/match_results", tags=["match"])
+async def update_match_result(request: Request, updateRequest: UpdateMatchResultRequest, db: AsyncSession = Depends(database.get_session)):
+    if request.state.user_session is None or request.state.user_session.user_role != UserRole.admin:
+        return HTTPException(status_code=401, detail="Unauthorized")
+    match_results_controller = MatchController(
+        match_repository=MatchRepository(db),
+        team_repository=TeamRepository(db),
+        match_result_lock=DistributedLock(MATCH_LOCK_KEY)
+    )
+    is_ok = await match_results_controller.update_match_results_for_match_id(
+        round_number=updateRequest.round_number,
+        match_id=updateRequest.match_id,
+        team_id=updateRequest.team_id,
+        team_goals=updateRequest.team_goals
+    )
+    if is_ok:
+        return JSONResponse(content={"detail":"match result updated successfully"}, status_code=200)
+    else:
+        return JSONResponse(content={"detail":"match result update failed"}, status_code=500)
+    
+
+@match_router.delete("/match_results", tags=["match"])
+async def delete_match_result(request: Request, deleteRequest: DeleteMatchResultRequest, db: AsyncSession = Depends(database.get_session)):
+    if request.state.user_session is None or request.state.user_session.user_role != UserRole.admin:
+        return HTTPException(status_code=401, detail="Unauthorized")
+    match_results_controller = MatchController(
+        match_repository=MatchRepository(db),
+        team_repository=TeamRepository(db),
+        match_result_lock=DistributedLock(MATCH_LOCK_KEY)
+    )
+    is_ok = await match_results_controller.delete_match(
+        round_number=deleteRequest.round_number,
+        match_id=deleteRequest.match_id
+    )
+    if is_ok:
+        return JSONResponse(content={"detail":"match result deleted successfully"}, status_code=200)
+    else:
+        return JSONResponse(content={"detail":"match result deletion failed"}, status_code=500)
+
 
 @match_router.websocket("/ws/match_rankings/{round}/{group}")
 async def websocket_endpoint(websocket: WebSocket, round: int, group: int):
