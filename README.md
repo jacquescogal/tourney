@@ -7,7 +7,6 @@ Steps:
 1. Run `docker-compose up --build` in this directory
 2. Access the frontend at `http://localhost:5173`
 
-Login:
+Admin Login:
 - username: `admin`
 - password: `admin`
-

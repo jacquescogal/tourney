@@ -14,7 +14,7 @@ from src.schemas.user import UserRole
 from fastapi import WebSocket, WebSocketDisconnect
 from src.controllers.connection_controller import ConnectionController
 from typing import List
-import json
+import logging
 match_router = APIRouter()
 database = Database.get_instance()
 
@@ -30,13 +30,19 @@ async def create_match_results(request: Request, batchRequest: BatchCreateMatchR
         team_repository=TeamRepository(db),
         match_result_lock=DistributedLock(MATCH_LOCK_KEY)
     )
-    is_ok = await match_results_controller.create_results(
-        request_match_results=batchRequest.results,
-        round_number=batchRequest.round_number
-    )
-    if is_ok:
-        return JSONResponse(content={"detail":"matches and results created successfully"}, status_code=200)
-    else:
+    try:
+        is_ok = await match_results_controller.create_results(
+            request_match_results=batchRequest.results,
+            round_number=batchRequest.round_number
+        )
+        if is_ok:
+            logging.info(f"{request.state.user_session.user_role} action: Match results created successfully")
+            return JSONResponse(content={"detail":"matches and results created successfully"}, status_code=200)
+        else:
+            logging.error(f"{request.state.user_session.user_role} action: Match results creation failed")
+            return JSONResponse(content={"detail":"matches and results creation failed"}, status_code=500)
+    except Exception as e:
+        logging.error(f"{request.state.user_session.user_role} action: Error creating match results: {e}")
         return JSONResponse(content={"detail":"matches and results creation failed"}, status_code=500)
 
 @match_router.get("/match_rankings", tags=["match"])
@@ -76,16 +82,23 @@ async def update_match_result(request: Request, updateRequest: UpdateMatchResult
         team_repository=TeamRepository(db),
         match_result_lock=DistributedLock(MATCH_LOCK_KEY)
     )
-    is_ok = await match_results_controller.update_match_results_for_match_id(
-        round_number=updateRequest.round_number,
-        match_id=updateRequest.match_id,
-        team_id=updateRequest.team_id,
-        team_goals=updateRequest.team_goals
-    )
-    if is_ok:
-        return JSONResponse(content={"detail":"match result updated successfully"}, status_code=200)
-    else:
+    try:
+        is_ok = await match_results_controller.update_match_results_for_match_id(
+            round_number=updateRequest.round_number,
+            match_id=updateRequest.match_id,
+            team_id=updateRequest.team_id,
+            team_goals=updateRequest.team_goals
+        )
+        if is_ok:
+            logging.info(f"{request.state.user_session.user_role} action: Match result updated successfully")
+            return JSONResponse(content={"detail":"match result updated successfully"}, status_code=200)
+        else:
+            logging.error(f"{request.state.user_session.user_role} action: Match result update failed")
+            return JSONResponse(content={"detail":"match result update failed"}, status_code=500)
+    except Exception as e:
+        logging.error(f"{request.state.user_session.user_role} action: Error updating match result: {e}")
         return JSONResponse(content={"detail":"match result update failed"}, status_code=500)
+    
     
 
 @match_router.delete("/match_results", tags=["match"])
@@ -97,13 +110,19 @@ async def delete_match_result(request: Request, deleteRequest: DeleteMatchResult
         team_repository=TeamRepository(db),
         match_result_lock=DistributedLock(MATCH_LOCK_KEY)
     )
-    is_ok = await match_results_controller.delete_match(
-        round_number=deleteRequest.round_number,
-        match_id=deleteRequest.match_id
-    )
-    if is_ok:
-        return JSONResponse(content={"detail":"match result deleted successfully"}, status_code=200)
-    else:
+    try:
+        is_ok = await match_results_controller.delete_match(
+            round_number=deleteRequest.round_number,
+            match_id=deleteRequest.match_id
+        )
+        if is_ok:
+            logging.info(f"{request.state.user_session.user_role} action: Match result deleted successfully")
+            return JSONResponse(content={"detail":"match result deleted successfully"}, status_code=200)
+        else:
+            logging.error(f"{request.state.user_session.user_role} action: Match result deletion failed")
+            return JSONResponse(content={"detail":"match result deletion failed"}, status_code=500)
+    except Exception as e:
+        logging.error(f"{request.state.user_session.user_role} action: Error deleting match result: {e}")
         return JSONResponse(content={"detail":"match result deletion failed"}, status_code=500)
 
 

@@ -7,6 +7,7 @@ from src.repositories.user import UserRepository
 from src.redis.lock import DistributedLock, USER_LOCK_KEY
 from src.schemas.user import UserRole
 from fastapi import Request
+import logging
 user_router = APIRouter()
 database = Database.get_instance()
 session_storage = SessionStorage.get_instance()
@@ -25,4 +26,5 @@ async def create_user(request:Request, user: UserCreateRequest, db = Depends(dat
         role=user.user_role,
         team_id=user.team_id
     )
+    logging.info(f"{request.state.user_session.user_role} action: User created successfully")
     return {"detail":"user created successfully"}

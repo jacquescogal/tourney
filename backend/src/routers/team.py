@@ -12,6 +12,7 @@ from src.schemas.user import UserRole
 from fastapi import WebSocket, WebSocketDisconnect
 from src.controllers.connection_controller import ConnectionController
 from src.repositories.match_core import MatchRepository
+import logging
 team_router = APIRouter()
 database = Database.get_instance()
 
@@ -23,12 +24,18 @@ async def create_team(request:Request, batchRequest: BatchRegisterTeamRequest, d
     if request.state.user_session is None or request.state.user_session.user_role != UserRole.admin:
         return HTTPException(status_code=401, detail="Unauthorized")
     team_controller = TeamController(TeamRepository(db), team_lock=DistributedLock(TEAM_LOCK_KEY))
-    is_ok = await team_controller.create_teams(
-        request_teams=batchRequest.teams
-    )
-    if is_ok:
-        return JSONResponse(content={"detail":"teams created successfully"}, status_code=200)
-    else:
+    try:
+        is_ok = await team_controller.create_teams(
+            request_teams=batchRequest.teams
+        )
+        if is_ok:
+            logging.info(f"{request.state.user_session.user_role} action: Teams created successfully")
+            return JSONResponse(content={"detail":"teams created successfully"}, status_code=200)
+        else:
+            logging.error(f"{request.state.user_session.user_role} action: Teams creation failed")
+            return JSONResponse(content={"detail":"teams creation failed"}, status_code=500)
+    except Exception as e:
+        logging.error(f"{request.state.user_session.user_role} action: Error creating teams: {e}")
         return JSONResponse(content={"detail":"teams creation failed"}, status_code=500)
     
 @team_router.get("/teams", tags=["team"])
@@ -59,10 +66,16 @@ async def update_team(request: Request, team_id: int, team: TeamUpdateRequest, d
     if request.state.user_session is None or request.state.user_session.user_role != UserRole.admin:
         return HTTPException(status_code=401, detail="Unauthorized")
     team_controller = TeamController(TeamRepository(db), team_lock=DistributedLock(TEAM_LOCK_KEY))
-    is_ok = await team_controller.update_team_details_for_id(team_id, team.team_name, registration_date_ddmm=team.registration_date_ddmm)
-    if is_ok:
-        return JSONResponse(content={"detail":"team updated successfully"}, status_code=200)
-    else:
+    try:
+        is_ok = await team_controller.update_team_details_for_id(team_id, team.team_name, registration_date_ddmm=team.registration_date_ddmm)
+        if is_ok:
+            logging.info(f"{request.state.user_session.user_role} action: Team updated successfully")
+            return JSONResponse(content={"detail":"team updated successfully"}, status_code=200)
+        else:
+            logging.error(f"{request.state.user_session.user_role} action: Team update failed")
+            return JSONResponse(content={"detail":"team update failed"}, status_code=500)
+    except Exception as e:
+        logging.error(f"{request.state.user_session.user_role} action: Error updating team: {e}")
         return JSONResponse(content={"detail":"team update failed"}, status_code=500)
 
 @team_router.delete("/teams/{team_id}", tags=["team"])
@@ -73,10 +86,16 @@ async def delete_team(request: Request, team_id: int, db: AsyncSession = Depends
     if request.state.user_session is None or request.state.user_session.user_role != UserRole.admin:
         return HTTPException(status_code=401, detail="Unauthorized")
     team_controller = TeamController(TeamRepository(db), MatchRepository(db), DistributedLock(TEAM_LOCK_KEY), DistributedLock(MATCH_LOCK_KEY))
-    is_ok = await team_controller.delete_team(team_id)
-    if is_ok:
-        return JSONResponse(content={"detail":"team deleted successfully"}, status_code=200)
-    else:
+    try:
+        is_ok = await team_controller.delete_team(team_id)
+        if is_ok:
+            logging.info(f"{request.state.user_session.user_role} action: Team deleted successfully")
+            return JSONResponse(content={"detail":"team deleted successfully"}, status_code=200)
+        else:
+            logging.error(f"{request.state.user_session.user_role} action: Team deletion failed")
+            return JSONResponse(content={"detail":"team deletion failed"}, status_code=500)
+    except Exception as e:
+        logging.error(f"{request.state.user_session.user_role} action: Error deleting team: {e}")
         return JSONResponse(content={"detail":"team deletion failed"}, status_code=500)
 
 @team_router.websocket("/ws/teams")

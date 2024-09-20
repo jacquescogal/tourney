@@ -69,7 +69,6 @@ class MatchController:
             for match_result in request_match_results:
                 if team_name_to_group_map[match_result.result[0].team_name] != team_name_to_group_map[match_result.result[1].team_name]:
                     raise HTTPException(status_code=400, detail="Cross group matches are not allowed in round 1 and 2")
-        print("before lock")
         # get lock here
         # existing matches will be consistent
         # we also check if matches have already been played between two teams for a round

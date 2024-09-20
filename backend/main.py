@@ -7,6 +7,14 @@ from src.routers import match_core
 from src.routers import user
 from src.routers import session
 from src.middleware.middleware import CookieSessionMiddleware
+import logging
+
+# Configure logging
+logging.basicConfig(
+    filename='log.txt',  # Log to log.txt file
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # Log format
+    level=logging.INFO  # Set the logging level (e.g., DEBUG, INFO, WARNING, ERROR, CRITICAL)
+)
 
 app = FastAPI()
 
