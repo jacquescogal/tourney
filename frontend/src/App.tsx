@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import CreateMatchResultForm from "./components/forms/CreateMatchResultForm";
-import CreateTeamForm from "./components/forms/CreateTeamForm";
 import Header from "./components/commons/Header";
 import TeamDetailPage from "./pages/team_detail_page/TeamDetailPage";
 import CreateTeamPage from "./pages/admin/CreateTeamPage";
@@ -10,7 +8,6 @@ import LoginPage from "./pages/login/LoginPage";
 import { IUserSession } from "./types/session";
 import SessionService from "./api/SessionService";
 import AdminPanel from "./pages/admin/HomePage";
-import Leaderboard from "./components/boards/Leaderboard";
 import LeaderboardPage from "./pages/leaderboard/LeaderboardPage";
 
 function App() {

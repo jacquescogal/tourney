@@ -26,25 +26,46 @@ services:
       - "6379:6379" 
     networks: 
       - app-network
-  # fastapi:
-  #   build:
-  #     context: .
-  #     dockerfile: ./backend/Dockerfile
-  #   container_name: fastapi-backend
-  #   depends_on:
-  #     mysql:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_started
-  #   ports:
-  #     - "8000:8000"
-  #   environment:
-  #     ENVIRONMENT: local
-  #     LOCAL_DATABASE_URL: mysql+asyncmy://root:password@mysql-local:3306/gt-football
-  #     LOCAL_REDIS_URL: redis://redis-local:6379/0
-  #   networks:
-  #     - app-network
+  fastapi:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    container_name: fastapi-backend
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    environment:
+      ENVIRONMENT: local
+      LOCAL_DATABASE_URL: mysql+asyncmy://root:password@mysql-local:3306/gt-football
+      LOCAL_REDIS_URL: redis://redis-local:6379/0
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
+  react-vite:
+    build:
+      context: .
+      dockerfile: ./frontend/Dockerfile
+    container_name: react-vite-frontend
+    depends_on:
+      fastapi:
+        condition: service_healthy
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_HOST: "http://localhost:8000"
+      VITE_WS_HOST: "ws://localhost:8000"
+    networks: 
+      - app-network
   
 volumes:
   mysql_data:

@@ -1,4 +1,4 @@
-import React, { KeyboardEventHandler, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   BatchCreateMatchResultsRequest,
   CreateMatchResults,

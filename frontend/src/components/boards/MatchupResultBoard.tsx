@@ -6,13 +6,12 @@ import "@ag-grid-community/styles/ag-theme-quartz.css";
 import {
   ITeamMatchResultRow,
   ITeamMatchResultRowHolder,
-  UpdateTeamRequestSchema,
 } from "../../types/team";
 // import { useNavigate } from "react-router-dom";
 import React, { useEffect, useState } from "react";
 import MatchService from "../../api/MatchService";
 import axios from "axios";
-import { WS_MATCHRESULTS, WS_MATCHUP } from "../../api_routes/websocket";
+import { WS_MATCHRESULTS } from "../../api_routes/websocket";
 import { DeleteMatchResultRequest, DeleteMatchResultRequestSchema, UpdateMatchResultRequest, UpdateMatchResultRequestSchema } from "../../types/match";
 
 ModuleRegistry.registerModules([ClientSideRowModelModule]);

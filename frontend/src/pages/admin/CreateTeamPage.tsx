@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import CreateTeamForm from '../../components/forms/CreateTeamForm'
 import Teamboard from '../../components/boards/Teamboard'
-import TeamService from '../../api/teamService'
 
 
 const CreateTeamPage = (props:{setModalOpen: React.Dispatch<React.SetStateAction<boolean>>,setTeamID:React.Dispatch<React.SetStateAction<number>>}) => {

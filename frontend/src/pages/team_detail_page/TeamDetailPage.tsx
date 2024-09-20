@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { ITeamDetails, ITeamMatchUpDetail, ITeamMatchUpDetailRow } from "../../types/team";
-import TeamService from "../../api/teamService";
+import TeamService from "../../api/TeamService";
 import MatchupHistoryBoard from "../../components/boards/MatchupHistoryBoard";
 
 const TeamDetailPage = (props:{team_id?:number}) => {

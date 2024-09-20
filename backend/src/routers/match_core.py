@@ -53,7 +53,7 @@ async def get_match_rankings(request: Request, round_number: int = None, group_n
         team_repository=TeamRepository(db),
         match_result_lock=DistributedLock(MATCH_LOCK_KEY)
     )
-    match_results = await match_results_controller.get_match_rankings(qualifying_count = Settings.get_instance().round_qualify_count.get(round,4) ,round_number=round_number, group_number_filter=group_number)
+    match_results = await match_results_controller.get_match_rankings(qualifying_count = 4 ,round_number=round_number, group_number_filter=group_number)
     return JSONResponse(content=match_results.dict(), status_code=200)
 
 @match_router.get("/match_results", tags=["match"])

@@ -7,7 +7,7 @@ import {
 import { z } from "zod";
 import Button from "../commons/Button";
 import { Result } from "../../types/generic";
-import TeamService from "../../api/teamService";
+import TeamService from "../../api/TeamService";
 
 const CreateTeamForm = (props:{consoleText:string, appendToConsole:(text: string) => void, content:React.ReactNode}) => {
   const [text, setText] = useState("");

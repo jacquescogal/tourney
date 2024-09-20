@@ -25,7 +25,7 @@ const CreateMatchupPage = (props:{setModalOpen: React.Dispatch<React.SetStateAct
         </div>}/>
         {
           leaderBoardToggle ? <Leaderboard  leaderBoardToggle={leaderBoardButtonToggle} {...props}/> : <MatchupResultBoard 
-          leaderBoardToggle={leaderBoardButtonToggle}/>
+          leaderBoardToggle={leaderBoardButtonToggle} appendToConsole={()=>{}}/>
         }
     </div>
   )

@@ -7,11 +7,8 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { parse } from "date-fns";
 import { ITeam, UpdateTeamRequestSchema } from "../../types/team";
-import TeamService from "../../api/teamService";
-import { GOTO_TEAM_DETAIL_PAGE } from "../../routes/team";
-import { useNavigate } from "react-router-dom";
+import TeamService from "../../api/TeamService";
 import { WS_TEAMS } from "../../api_routes/websocket";
-import Popup from "../commons/Popup";
 ModuleRegistry.registerModules([ClientSideRowModelModule]);
 
 const Teamboard = (props: { appendToConsole: (text: string) => void ,setModalOpen: React.Dispatch<React.SetStateAction<boolean>>,setTeamID:React.Dispatch<React.SetStateAction<number>>}) => {
@@ -25,7 +22,6 @@ const Teamboard = (props: { appendToConsole: (text: string) => void ,setModalOpe
 };
 
 const BoardTeams = (prop: { appendToConsole: (text: string) => void ,setModalOpen: React.Dispatch<React.SetStateAction<boolean>>,setTeamID:React.Dispatch<React.SetStateAction<number>>}) => {
-  const nav = useNavigate();
   const [rowData, setRowData] = useState<ITeam[]>([]);
   const deleteTeam = async (team_id: number) => {
     try {
