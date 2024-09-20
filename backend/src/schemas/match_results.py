@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import List
 
 class MatchResultBase(BaseModel):
@@ -50,3 +50,33 @@ class BatchCreateMatchResultsRequest(BaseModel):
         if v < 1 or v > 3:
             raise ValueError("Round number should be between 1 and 3")
         return v
+    
+class MatchResultsConcat(BaseModel):
+    # is match result with both team names and goals scored for a match id
+    # team 1 is lexically smaller than team 2
+    match_id: int = Field(..., example=1, description="Unique identifier for the match")
+    round_number: int = Field(..., example=1, description="Round number for the match")
+    team_1_id: int = Field(..., example=1, description="Unique identifier for the first team")
+    team_1_name: str = Field(..., example='Team A', description="Name of the first team")
+    team_1_goals: int = Field(..., example=2, description="Number of goals scored by the first team")
+    team_2_id: int = Field(..., example=2, description="Unique identifier for the second team")
+    team_2_name: str = Field(..., example='Team B', description="Name of the second team")
+    team_2_goals: int = Field(..., example=2, description="Number of goals scored by the second team")
+
+
+class MatchResultsConcatStrict(MatchResultsConcat):
+    @model_validator(mode="after")
+    def validate_match_results_concat(self):
+        # validates:
+        # goals scored by both teams should be non-negative
+        if self.team_1_goals < 0 or self.team_2_goals < 0:
+            raise ValueError("Goals scored should be non-negative")
+        if self.team_1_name > self.team_2_name:
+            # swap if team 1 is lexically greater than team 2
+            self.team_1_name, self.team_2_name = self.team_2_name, self.team_1_name
+            self.team_1_id, self.team_2_id = self.team_2_id, self.team_1_id
+            self.team_1_goals, self.team_2_goals = self.team_2_goals, self.team_1_goals
+        return self
+    
+class GetMatchResultsResponse(BaseModel):
+    match_results: List[MatchResultsConcatStrict] = Field(..., example=[{"match_id": 1, "round_number": 1, "team_1_id": 1, "team_1_name": "Team A", "team_1_goals": 2, "team_2_id": 2, "team_2_name": "Team B", "team_2_goals": 2}], description="List of match results")

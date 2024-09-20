@@ -132,3 +132,31 @@ class TeamController:
             group_number=team.group_number,
             match_ups=match_ups
         )
+    
+    async def update_team_details_for_id(self, team_id: int, team_name: str, registration_date_ddmm: str) -> bool:
+        if not await self.team_lock.get():
+            await self.team_lock.give()
+            raise HTTPException(status_code=500, detail="Failed to get team lock")
+        try:
+            registration_day_of_year = ddmm_to_day_of_year(registration_date_ddmm)
+            print("registration_day_of_year", registration_day_of_year)
+            existing_teams:List[Team] = await self.team_repository.get_teams_by_team_names([team_name])
+            if len(existing_teams) > 1 or (len(existing_teams) == 1 and existing_teams[0].team_id != team_id):
+                await self.team_lock.give()
+                raise HTTPException(status_code=400, detail="Team name already taken")
+            if await self.team_repository.update_team(team_id, team_name, registration_day_of_year) == True:
+                is_committed = await self.team_repository.commit_transaction()
+                await self.team_lock.give()
+                connectionController = ConnectionController.get_instance()
+                teams:List[TeamBase] = await self.get_teams()
+                response = json.dumps(sorted([team.dict() for team in teams], key=lambda x: x["group_number"]))
+                await connectionController.broadcast(
+                    ("teams"),
+                    response
+                )
+                return is_committed
+            else:
+                await self.team_lock.give()
+                return False
+        finally:
+            await self.team_lock.give()

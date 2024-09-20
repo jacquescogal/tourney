@@ -1,6 +1,6 @@
 from src.repositories.match_core import MatchRepository
 from src.repositories.team import TeamRepository
-from src.schemas.match_results import CreateMatchResults, MatchResultDetailed, MatchResultSparse
+from src.schemas.match_results import CreateMatchResults, MatchResultDetailed, MatchResultSparse, MatchResultsConcat,MatchResultsConcatStrict
 from src.models.match_results import MatchResults
 from src.models.team import Team
 from typing import List, Set, Dict
@@ -12,7 +12,7 @@ import json
 from src.redis.lock import DistributedLock
 from src.controllers.connection_controller import ConnectionController
 class MatchController:
-    def __init__(self, match_repository: MatchRepository, team_repository: TeamRepository, match_result_lock: DistributedLock):
+    def __init__(self, match_repository: MatchRepository = None, team_repository: TeamRepository = None, match_result_lock: DistributedLock = None):
         # inject repositories
         self.match_repository = match_repository
         self.team_repository = team_repository
@@ -119,6 +119,10 @@ class MatchController:
                             ("match_rankings",round_number,2),
                             json.dumps((await self.get_match_rankings(qualifying_count=4, round_number=round_number, group_number_filter=2)).dict()),
                         )
+                        await connectionController.broadcast(
+                            ("match_results",round_number),
+                            json.dumps((await self.get_concat_match_results(round_number)).dict())
+                        )
                         return True
                     else:
                         await self.match_result_lock.give()
@@ -215,6 +219,31 @@ class MatchController:
                 team_rankings=[team for team in group_dict[group_number]]
             ) for group_number in group_dict.keys()]
         )
+    async def get_concat_match_results(self, round_number: int) -> List[MatchResultsConcatStrict]:
+        match_results: List[MatchResultDetailed] = await self.match_repository.get_match_results_by_round(round_number)
+        match_results_concat: Dict[int, MatchResultsConcat] = {} # match_id -> MatchResultsConcat
+        for result in match_results:
+            match_results_concat.setdefault(result.match_id, MatchResultsConcat(match_id=result.match_id, round_number=round_number, team_1_id=0, team_1_name="", team_1_goals=0, team_2_id=0, team_2_name="", team_2_goals=0))
+            if match_results_concat[result.match_id].team_1_id == 0:
+                match_results_concat[result.match_id].team_1_id = result.team_id
+                match_results_concat[result.match_id].team_1_name = result.team_name
+                match_results_concat[result.match_id].team_1_goals = result.goals_scored
+            else:
+                match_results_concat[result.match_id].team_2_id = result.team_id
+                match_results_concat[result.match_id].team_2_name = result.team_name
+                match_results_concat[result.match_id].team_2_goals = result.goals_scored
+        # the strict enforces that team_1_name is lexically smaller than team_2_name and swaps if not
+        match_result_concat_list = [MatchResultsConcatStrict(
+            match_id=match_id,
+            round_number=match_results_concat[match_id].round_number,
+            team_1_id=match_results_concat[match_id].team_1_id,
+            team_1_name=match_results_concat[match_id].team_1_name,
+            team_1_goals=match_results_concat[match_id].team_1_goals,
+            team_2_id=match_results_concat[match_id].team_2_id,
+            team_2_name=match_results_concat[match_id].team_2_name,
+            team_2_goals=match_results_concat[match_id].team_2_goals
+        ) for match_id in match_results_concat.keys()]
+        return match_result_concat_list
     
     def _get_score(self, team: TeamRank) -> int:
         return team.wins * 3 + team.draws

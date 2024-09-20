@@ -70,10 +70,11 @@ class TeamMatchUpDetail(BaseModel):
     goals_conceded: int = Field(..., example=1, description='Goals Conceded in the Match')
 
 class TeamDetails(TeamBase):
-    """
-    Schema for getting details of a team
-    """
     team_name: str = Field(..., example='Team 1', description='Team Name')
     registration_date_ddmm: str = Field(..., example='01/12', description='Registration Date in DD/MM format')
     group_number: int = Field(..., example=1, description='Group Number')
     match_ups: list[TeamMatchUpDetail] = Field(..., example=[{'opponent': 'Team 2', 'round_number': 1, 'match_id': 1, 'goals_scored': 2, 'goals_conceded': 1}], description='List of Match Ups')
+
+class TeamUpdateRequest(BaseModel):
+    team_name: str = Field(..., example='Team 1', description='Team Name')
+    registration_date_ddmm: str = Field(..., example='01/12', description='Registration Date in DD/MM format')

@@ -27,13 +27,13 @@ const TextField = () => {
         <span className="text-orange-300">Login as admin</span> for all
         privilegese including editing team and match details
       </p>
-      <p className="text-lg my-4">
-        <span className="text-orange-300">Login as team manager</span> to
-        register players and edit team information
+      <p className="text-lg my-4 text-gray-300">
+        <span className="text-gray-300">Login as team manager</span> to
+        register players and edit team information (future development)
       </p>
-      <p className="text-lg mt-4">
-        <span className="text-orange-300">Login as player</span> to edit your
-        own information
+      <p className="text-lg mt-4 text-gray-300">
+        <span className="text-gray-300">Login as player</span> to edit your
+        own information (future development)
       </p>
     </div>
   );
@@ -105,7 +105,8 @@ const LoginForm = (props:{setUserSession:React.Dispatch<React.SetStateAction<IUs
             className={`border border-gray-300 rounded p-2 ${passwordError ? 'border-red-500' : ''}`}
           />
           <Button className="w-full bg-blue-400 text-black" onClick={submitLogin}>Login</Button>
-          <Button className="w-full text-white bg-orange-400 hover:bg-orange-600">Continue as Guest</Button>
+          <Button className="w-full text-white bg-orange-400 hover:bg-orange-600"
+          onClick={e=>{e.preventDefault(); nav("/leaderboard")}}>Continue as Guest</Button>
         </form>
 
         <span className="text-red-500 h-2 m-2 text-sm">{error}</span>

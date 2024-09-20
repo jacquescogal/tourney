@@ -11,19 +11,15 @@ import Button from "../commons/Button";
 import { Result } from "../../types/generic";
 import MatchService from "../../api/MatchService";
 
-const CreateMatchResultForm = () => {
+const CreateMatchResultForm = (props:{consoleText:string, appendToConsole:(text: string) => void, content:React.ReactNode}) => {
   const [text, setText] = useState("");
   const [counter, setCounter] = useState<number>(0); // forces re-render
   const [showPopup, setShowPopup] = useState<boolean>(false);
-  const [consoleText, setConsoleText] = useState<string>("");
   const consoleRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
   const roundNumber = 1;
 
-  const appendToConsole = (text: string) => {
-    setConsoleText(consoleText + text + "\n---\n");
-  };
 
   const getCursorLineNumber = () => {
     const textarea = textareaRef.current;
@@ -95,13 +91,13 @@ const CreateMatchResultForm = () => {
     try {
       const response = await MatchService.createMatchResults(payload);
       if (response.ok) {
-        appendToConsole(
+        props.appendToConsole(
           "body:\n" + JSON.stringify(payload) + "\nServer Response:\nsuccess"
         );
         setText(""); // Reset the form
       } else {
         const jsonData = await response.json();
-        appendToConsole(
+        props.appendToConsole(
           "body:\n" +
             JSON.stringify(payload) +
             "\nServer Response:\nerror:" +
@@ -109,7 +105,7 @@ const CreateMatchResultForm = () => {
         );
       }
     } catch (error) {
-      appendToConsole(
+      props.appendToConsole(
         "body:\n" +
           JSON.stringify(payload) +
           "\nServer Response:\nerror:\n " +
@@ -242,9 +238,10 @@ const CreateMatchResultForm = () => {
     if (consoleRef.current) {
       consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
     }
-  }, [consoleText]);
+  }, [props.consoleText]);
   return (
-    <div className="h-screen-less-all-headers w-article-wide flex justify-center flex-col items-center">
+    <div className="h-screen-less-all-headers w-article-wide flex flex-col ">
+      {props.content}
     <form
       onSubmit={handleSubmit}
       className="bg-blue-100 flex justify-center flex-col w-full items-center p-4 rounded-lg"
@@ -254,7 +251,7 @@ const CreateMatchResultForm = () => {
         ref={consoleRef}
         className="bg-black text-green-300 p-2 h-[200px] w-full overflow-y-scroll whitespace-pre-wrap break-words scroll-smooth"
       >
-        {consoleText}
+        {props.consoleText}
       </div>
       <h1 className="text-2xl self-start text-text-pop">Create Matchup</h1>
       {/* format */}

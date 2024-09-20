@@ -11,8 +11,9 @@ ModuleRegistry.registerModules([ClientSideRowModelModule]);
 
 const MatchupHistoryBoard = (props:{matchupDetails: ITeamMatchUpDetailRow[]}) => {
   return (
-    <div className="bg-gt-blue h-4/5 absolute bottom-0 w-article-wide p-4">
+    <div className="h-4/5 absolute bottom-0 w-full p-4">
       <div className="h-full w-full flex flex-col">
+        <h1>Match History</h1>
         <BoardTeams {...props}/>
       </div>
     </div>

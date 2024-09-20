@@ -9,7 +9,7 @@ import Button from "../commons/Button";
 import { Result } from "../../types/generic";
 import TeamService from "../../api/teamService";
 
-const CreateTeamForm = (props:{consoleText:string, appendToConsole:(text: string) => void}) => {
+const CreateTeamForm = (props:{consoleText:string, appendToConsole:(text: string) => void, content:React.ReactNode}) => {
   const [text, setText] = useState("");
   const [counter, setCounter] = useState<number>(0); // forces re-render
   const [showPopup, setShowPopup] = useState<boolean>(false);
@@ -205,7 +205,8 @@ const CreateTeamForm = (props:{consoleText:string, appendToConsole:(text: string
   }, [props.consoleText]);
 
   return (
-    <div className="h-screen-less-all-headers w-article-wide flex justify-center flex-col items-center">
+    <div className="h-screen-less-all-headers w-article-wide flex flex-col">
+      {props.content}
       <form
         onSubmit={handleSubmit}
         className="bg-blue-100 flex justify-center flex-col w-full items-center p-4 rounded-lg"

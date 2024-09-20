@@ -13,7 +13,8 @@ export default {
         'text-pop':'#344054',
         'text-norm':'#656d7c',
         'test-green':'#00A300',
-        'error':'red-500'
+        'error':'red-500',
+        'edit':'white !important'
       },
       spacing: {
 

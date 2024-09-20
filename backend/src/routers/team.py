@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from src.database.database import Database
 from src.repositories.team import TeamRepository
 from src.controllers.team import TeamController
-from src.schemas.team import BatchRegisterTeamRequest, TeamBase,TeamDetails
+from src.schemas.team import BatchRegisterTeamRequest, TeamBase,TeamDetails, TeamUpdateRequest
 from src.redis.lock import DistributedLock, TEAM_LOCK_KEY, MATCH_LOCK_KEY
 from typing import List
 from fastapi import HTTPException, Request
@@ -50,6 +50,24 @@ async def get_team(team_id: int, db: AsyncSession = Depends(database.get_session
     if team is None:
         return JSONResponse(content={"detail":"team not found"}, status_code=404)
     return JSONResponse(content=team.dict(), status_code=200)
+
+@team_router.put("/teams/{team_id}", tags=["team"])
+async def update_team(request: Request, team_id: int, team: TeamUpdateRequest, db: AsyncSession = Depends(database.get_session)):
+    """
+    API endpoint to update team by team ID.
+    """
+    if request.state.user_session is None or request.state.user_session.user_role != UserRole.admin:
+        return HTTPException(status_code=401, detail="Unauthorized")
+    team_controller = TeamController(TeamRepository(db), team_lock=DistributedLock(TEAM_LOCK_KEY))
+    print("team_id", team_id)
+    print("team", team)
+    print("team.team_name", team.team_name)
+    print("team.registration_date_ddmm", team.registration_date_ddmm)
+    is_ok = await team_controller.update_team_details_for_id(team_id, team.team_name, registration_date_ddmm=team.registration_date_ddmm)
+    if is_ok:
+        return JSONResponse(content={"detail":"team updated successfully"}, status_code=200)
+    else:
+        return JSONResponse(content={"detail":"team update failed"}, status_code=500)
 
 @team_router.delete("/teams/{team_id}", tags=["team"])
 async def delete_team(request: Request, team_id: int, db: AsyncSession = Depends(database.get_session)):

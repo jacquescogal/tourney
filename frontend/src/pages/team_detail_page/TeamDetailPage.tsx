@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
 import axios from "axios";
 import { ITeamDetails, ITeamMatchUpDetail, ITeamMatchUpDetailRow } from "../../types/team";
 import TeamService from "../../api/teamService";
 import MatchupHistoryBoard from "../../components/boards/MatchupHistoryBoard";
 
-const TeamDetailPage = () => {
-  const { id } = useParams<{ id: string }>();
+const TeamDetailPage = (props:{team_id?:number}) => {
+  const {team_id} = props;
   const [teamDetails, setTeamDetails] = useState<ITeamDetails | null>(null);
   const [matchupDetailRows, setMatchupDetailRows] = useState<ITeamMatchUpDetailRow[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -37,13 +36,12 @@ const TeamDetailPage = () => {
       }
     };
 
-    if (id) {
-        const team_id = Number(id);
-        if (!isNaN(team_id)){
+    if (team_id) {
+        if (!isNaN(team_id) && team_id > 0) {
             fetchTeamDetails(team_id);
         }
     }
-  }, [id]);
+  }, [team_id]);
 
   if (error) {
     return <div>Error: {error}</div>;
@@ -55,7 +53,8 @@ const TeamDetailPage = () => {
 
   return (
     <div className="h-screen-less-all-headers relative">
-      <h1>Team Details for {teamDetails.team_name}</h1>
+      
+      <h2 className="text-xl font-semibold mb-4">{`Team ${teamDetails.team_name}`}</h2>
       <p>Registration Date: {teamDetails.registration_date_ddmm}</p>
       <p>Group Number: {teamDetails.group_number}</p>
       <MatchupHistoryBoard matchupDetails={matchupDetailRows}/>

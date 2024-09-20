@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import CreateMatchResultForm from "./components/forms/CreateMatchResultForm";
 import CreateTeamForm from "./components/forms/CreateTeamForm";
@@ -10,8 +10,12 @@ import LoginPage from "./pages/login/LoginPage";
 import { IUserSession } from "./types/session";
 import SessionService from "./api/SessionService";
 import AdminPanel from "./pages/admin/HomePage";
+import Leaderboard from "./components/boards/Leaderboard";
+import LeaderboardPage from "./pages/leaderboard/LeaderboardPage";
 
 function App() {
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [teamID, setTeamID] = useState<number>(0);
   const [userSession, setUserSession] = React.useState<IUserSession | null>(null);
 
   useEffect(()=>{
@@ -43,17 +47,21 @@ function App() {
       {/* Routes to pages */}
       <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/admin" element={<AdminPanel />}>
+        <Route path="/admin" element={<AdminPanel modalOpen={modalOpen} setModalOpen={setModalOpen}
+        teamID={teamID} setTeamID={setTeamID}/>}>
           <Route
             path="team"
-            element={<CreateTeamPage />}
+            element={<CreateTeamPage setModalOpen={setModalOpen} setTeamID={setTeamID}/>}
           />
           <Route
             path="matchup"
-            element={<CreateMatchupPage />}
+            element={<CreateMatchupPage setModalOpen={setModalOpen} setTeamID={setTeamID}/>}
           />
         </Route>
         <Route path="/login" element={<LoginPage setUserSession={setUserSession}/>} />
+
+        <Route path="/leaderboard" element={<LeaderboardPage modalOpen={modalOpen} setModalOpen={setModalOpen}
+        teamID={teamID} setTeamID={setTeamID}/>} />
         <Route path="/teams/:id" element={<TeamDetailPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

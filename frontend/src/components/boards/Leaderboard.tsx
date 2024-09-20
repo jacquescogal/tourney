@@ -4,7 +4,7 @@ import { AgGridReact } from "@ag-grid-community/react";
 import "@ag-grid-community/styles/ag-grid.css";
 import "@ag-grid-community/styles/ag-theme-quartz.css";
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { IMatchRankingResponse, ITeamRanking, ITeamRankingRow } from "../../types/leaderboard";
 import { parse } from "date-fns";
 import MatchService from "../../api/MatchService";
@@ -12,7 +12,7 @@ import { WS_MATCHUP } from "../../api_routes/websocket";
 
 ModuleRegistry.registerModules([ClientSideRowModelModule]);
 
-const Leaderboard = () => {
+const Leaderboard = (props:{leaderBoardToggle?:ReactNode,setModalOpen: React.Dispatch<React.SetStateAction<boolean>>,setTeamID:React.Dispatch<React.SetStateAction<number>>}) => {
   const [boardOneRowData, setBoardOneRowData] = useState<ITeamRankingRow[]>([]);
   const [boardTwoRowData, setBoardTwoRowData] = useState<ITeamRankingRow[]>([]);
 
@@ -117,6 +117,7 @@ const Leaderboard = () => {
           teamRankingsRow.push(trr);
         });
         setBoardTwoRowData(teamRankingsRow);
+
     };
 
 
@@ -139,16 +140,20 @@ const Leaderboard = () => {
   return (
     <div className="h-screen-less-all-headers w-article-wide p-4">
       <div className="h-full w-full flex flex-col">
+        <div className="flex flex-row items-center">
+      <h1 className="underline text-2xl">Leaderboard</h1>
+      {props.leaderBoardToggle}
+      </div>
       <h1>Group {1}</h1>
-        <BoardRanking rowData={boardOneRowData} />
+        <BoardRanking rowData={boardOneRowData} {...props}/>
         <h1>Group {2}</h1>
-        <BoardRanking rowData={boardTwoRowData} />
+        <BoardRanking rowData={boardTwoRowData} {...props}/>
       </div>
     </div>
   );
 };
 
-const BoardRanking = (props: { rowData:ITeamRankingRow[] }) => {
+const BoardRanking = (props: { rowData:ITeamRankingRow[],leaderBoardToggle?:ReactNode,setModalOpen: React.Dispatch<React.SetStateAction<boolean>>,setTeamID:React.Dispatch<React.SetStateAction<number>> }) => {
   // const nav = useNavigate();
 
   // Column Definitions: Defines & controls grid columns.
@@ -185,9 +190,11 @@ const BoardRanking = (props: { rowData:ITeamRankingRow[] }) => {
           rowData={props.rowData}
           columnDefs={colDefs}
           defaultColDef={defaultColDef}
-          // onRowClicked={(e) => {
-          //   nav(GOTO_TEAM_DETAIL_PAGE(e.data.team_id));
-          // }}
+          onRowClicked={(e) => {
+            console.log("hello")
+            props.setTeamID(e.data.team_id);
+            props.setModalOpen(true);
+          }}
           gridOptions={{
             rowClass: "cursor-pointer",
             rowClassRules: {
